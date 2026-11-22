@@ -41,49 +41,49 @@ renderer.css
 
 ### 1.1 CI 产物
 
-在 tag / main 上额外产出一个 release：
+只在 `v*` tag 上产出并发布：
 
 ```text
 hot-win.json
 hot-win-index.html
 hot-win-renderer.js
 hot-win-renderer.css
-
-hot-android.json
-hot-android.html        # index + bridge + renderer.js + css 内联成单文件
 ```
 
-manifest 示例：
+manifest 实际格式：
 
 ```json
 {
-  "version": 12,
-  "shellMin": 1,
-  "sha256": {
-    "renderer.js": "...",
-    "renderer.css": "...",
-    "index.html": "..."
+  "version": "0.1.2",
+  "builtAt": "2026-11-22T12:10:18.829Z",
+  "files": {
+    "index.html": "sha256...",
+    "renderer.js": "sha256...",
+    "renderer.css": "sha256..."
   }
 }
 ```
 
-- 发布到 GitHub Release assets（公开仓库），app 不需要 git clone。
-- 私有仓库不能在客户端放 token；私有仓库建议改用自建静态文件服务或 public release。
+- 发布到 GitHub Release assets（当前仓库公开），app 不需要 git clone。
+- 客户端只请求：
+  `https://github.com/wdzshz001/AIO/releases/latest/download/hot-win.json`
 
-### 1.2 Windows 实现（约 100 行）
+### 1.2 Windows 实现（已完成）
 
-1. `userData/hot/win/<version>/` 保存下载的 bundle。
+1. `userData/hot/win/<version>/` 保存已下载 bundle。
 2. 启动时 `protocol.handle('agg')` 优先从 hot 目录读；没有则读 `__dirname`。
-3. 窗口显示后异步请求 `hot-win.json`：
-   - 版本大于本地、shellMin ≤ 当前 shell 版本
-   - 下载文件到临时目录，校验 SHA256
+3. About 页手动「检查更新」：
+   - 请求 `hot-win.json`，与 `current.json`/内置 `app.getVersion()` 比较
+   - 逐个下载 3 个文件到临时目录，校验 SHA256
    - 原子写入 `hot/win/<version>/`，写 `current.json`
-4. 下次启动加载新版本；也可立即 `webContents.reload()`。
-5. 保留上一版本，坏文件自动回退。
+   - 700ms 后 `webContents.reload()`
+4. 启动时只检查并在顶部 Toast 提示，不自动下载。
+5. 校验失败/文件缺失自动用内置版本，不破坏启动。
 
-不改 `preload`、IPC、图片/媒体协议。
+实际改动：`main.ts` 的 `hot-check`/`hot-apply`、`preload.ts` 暴露方法、
+`HostBridge` 可选类型、App 启动提示、About 检查按钮。没有引入 electron-updater。
 
-### 1.3 Android 实现（一次原生改动后即可）
+### 1.3 Android 实现（未实现，后续可选）
 
 当前 UI 从 `file:///android_asset/www/index.html` 加载。直接切到 `filesDir/hot` 会改变
 localStorage origin，导致书架/设置丢失。
@@ -105,15 +105,12 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 
 一次性原生改动约 100–150 行 Java；之后前端/书源更新不再发 APK。
 
-### 1.4 更新时机
+### 1.4 更新时机（已确认）
 
-建议默认：
-
-- 启动后 **静默检查 + 后台下载**
-- 下一次启动应用；或下载完成时顶部 toast「内容已更新，重启后生效」
-- 设置里可保留「检查更新」手动按钮（现有 About 页已有入口）
-
-不要默认“立即强制重启”，会打断阅读。
+- 启动：静默检查；发现新版本只弹顶部 Toast，**不自动下载**。
+- 用户：设置 → 关于 → 检查更新，手动下载并应用。
+- 应用后 reload；失败保留旧版本。
+- 不做自动强制重启。
 
 ---
 
@@ -133,13 +130,13 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 应用不直接连 Git，而是连 **CI 发布出来的静态资产**：
 
 ```text
-git push tag v0.1.1
+git push tag v0.1.2
   -> GitHub Actions
     -> 构建 EXE/APK
-    -> 构建 hot-win.* / hot-android.*
+    -> 构建 hot-win.*
     -> 上传 GitHub Release
-  -> App 请求 releases/latest/download/hot-win.json
-  -> 校验/覆盖 userData 或 filesDir
+  -> App 启动请求 releases/latest/download/hot-win.json
+  -> 用户在设置中确认后下载/校验/覆盖 userData
 ```
 
 好处：
@@ -149,17 +146,21 @@ git push tag v0.1.1
 - 版本、回滚、审计都在 Git/Release 里
 - 不引入 electron-updater 等新依赖
 
+当前仓库已配置并验证：
+
+- Actions：`https://github.com/wdzshz001/AIO/actions`
+- Release：`https://github.com/wdzshz001/AIO/releases`
+- `v0.1.1` / `v0.1.2` 已成功跑完双端 + hot + release
+- `v0.1.2` 的 `hot-win.json` 可被客户端读取，实测检查/应用成功
+
 ---
 
-## 4. 需要确认的选择
+## 4. 当前已确认的决定
 
-1. **Git 服务与仓库地址**：GitHub / Gitee / GitLab？仓库是否公开？
-2. **热更新范围**：
-   - A. 先做 Windows Web Bundle（最快，原生零改动）
-   - B. 双端都做（Android 需一次性改 `MainActivity` + 新增下载器）
-3. **发布触发**：每次 push main 都发，还是只发 `v*` tag？
-4. **更新时机**：静默下载 + 下次启动生效（推荐），还是下载完弹窗询问？
-5. **Android 签名**：继续 debug 签名自用，还是 CI 用固定 keystore 签 release？
-6. **私有仓库**：如果是私有仓库，热更新资产放哪里？建议单独 public release repo 或静态对象存储。
+1. Git：`https://github.com/wdzshz001/AIO`，公开仓库。
+2. 热更新范围：先 Windows Web Bundle；Android 暂走 APK（后续可加单文件 HTML）。
+3. 发布：push main 只构建 artifact，`v*` tag 才发 Release。
+4. 更新：启动只提示，设置里手动检查并应用。
+5. Android 签名：当前 debug 签名自用；要 release 签名需在 CI 配置 keystore secrets。
+6. 私有仓库：当前公开，可直接用 Release；若改私有，需换独立 public 发布源或静态存储。
 
-确认后按“先 Windows、再 Android 单文件 HTML”的顺序实现，改动面最小。
