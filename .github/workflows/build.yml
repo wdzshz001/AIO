@@ -21,6 +21,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Ensure local Electron dist
+        shell: pwsh
+        run: |
+          $v = node -p "require('electron/package.json').version"
+          if (-not (Test-Path "node_modules/electron/dist/electron.exe")) {
+            $zip = Join-Path $env:RUNNER_TEMP "electron-$v.zip"
+            curl.exe -L --fail -o $zip "https://npmmirror.com/mirrors/electron/$v/electron-v$v-win32-x64.zip"
+            Remove-Item "node_modules/electron/dist" -Recurse -Force -ErrorAction SilentlyContinue
+            Expand-Archive $zip -DestinationPath "node_modules/electron/dist" -Force
+          }
+          Test-Path "node_modules/electron/dist/electron.exe"
       - run: npm run check
       - run: npm test
       - run: npm run dist:win
@@ -37,6 +48,9 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,11 +61,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
       - name: Android SDK packages
         run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n1)"
+          yes | "$SDKMGR" --licenses >/dev/null || true
+          "$SDKMGR" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - run: npm ci
       - run: node scripts/build-android.mjs
       - uses: gradle/actions/setup-gradle@v4
