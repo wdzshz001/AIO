@@ -1,0 +1,298 @@
+import { clean, qs, qsa, text } from '@agg/core';
+import type {
+  BookDetail,
+  BookRef,
+  BookSection,
+  Chapter,
+  ChapterContent,
+  Site,
+  SiteCtx,
+} from '@agg/core';
+import { proxyImage } from '../image.ts';
+
+/**
+ * CloudWN 漫画（wnacg 系图集站）。
+ *
+ * - 首页/分类/排行都是图集列表：`/photos-index-aid-{id}.html`
+ * - 一个图集 = 一部作品，内含 1..N 页图片；每页 12 张，分页
+ *   `/photos-index-page-{n}-aid-{id}.html`
+ * - 图片 CDN 校验 Referer，统一走 aggmedia 图片代理
+ * - 搜索：`/search/?q={keyword}`
+ */
+
+const BASE = 'https://www.cloudwn.shop';
+const REFERER = BASE + '/';
+
+function absolute(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  const raw = url.trim();
+  if (!raw) return undefined;
+  if (raw.startsWith('//')) return 'https:' + raw;
+  try {
+    return new URL(raw, BASE).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function albumId(href: string | null | undefined): string | null {
+  if (!href) return null;
+  const m = /(?:aid-|photos-index-aid-)(\d+)/.exec(href) ?? /\/photos-[^/]*-aid-(\d+)/.exec(href);
+  return m ? m[1] : null;
+}
+
+function albumUrl(id: string): string {
+  return `${BASE}/photos-index-aid-${id}.html`;
+}
+
+function parseAlbums(doc: ParentNode): BookRef[] {
+  const out: BookRef[] = [];
+  const seen = new Set<string>();
+  for (const li of qsa(doc, 'li.gallary_item')) {
+    const a =
+      qs<HTMLAnchorElement>(li, '.pic_box a[href]') ??
+      qs<HTMLAnchorElement>(li, '.title a[href]');
+    const href = a?.getAttribute('href');
+    const id = albumId(href);
+    if (!id || seen.has(id)) continue;
+    const title = clean(
+      a?.getAttribute('title') || text(qs(li, '.title a')) || text(qs(li, '.title')),
+    );
+    if (!title) continue;
+    seen.add(id);
+
+    const img = qs(li, 'img');
+    const rawCover =
+      img?.getAttribute('data-src') ?? img?.getAttribute('src') ?? undefined;
+    out.push({
+      url: albumUrl(id),
+      title,
+      cover: proxyImage(absolute(rawCover), REFERER),
+      extra: clean(text(qs(li, '.info_col'))) || undefined,
+    });
+  }
+  return out;
+}
+
+function pagesOf(doc: Document): number {
+  const body = clean(doc.body?.textContent ?? '');
+  const m = /(\d+)\s*張圖片/.exec(body);
+  if (m) return Math.max(1, Number(m[1]));
+  return 1;
+}
+
+function maxPage(doc: Document, id: string): number {
+  let max = 1;
+  for (const a of qsa<HTMLAnchorElement>(doc, 'a[href*="photos-index-page-"]')) {
+    const href = a.getAttribute('href') ?? '';
+    if (!href.includes(`aid-${id}`)) continue;
+    const m = /photos-index-page-(\d+)-aid-/.exec(href);
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return max;
+}
+
+function pageUrl(id: string, page: number): string {
+  return page <= 1
+    ? albumUrl(id)
+    : `${BASE}/photos-index-page-${page}-aid-${id}.html`;
+}
+
+function imagesOf(doc: Document): string[] {
+  const imgs = qsa<HTMLImageElement>(
+    doc,
+    '.gallary_wrap li.gallary_item img, #bodywrap .gallary_wrap img',
+  );
+  const out: string[] = [];
+  for (const img of imgs) {
+    const raw = img.getAttribute('data-src') ?? img.getAttribute('src') ?? '';
+    const abs = absolute(raw);
+    if (!abs) continue;
+    if (!/wnimg|\.(jpg|jpeg|png|webp|gif)/i.test(abs)) continue;
+    const proxied = proxyImage(abs, REFERER);
+    if (proxied) out.push(proxied);
+  }
+  return out;
+}
+
+/** 图集页只给 /data/t/ 缩略图；每张图对应一个 view 页，view 页里才是 /data/ 原图 */
+function viewLinksOf(doc: Document): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const a of qsa<HTMLAnchorElement>(doc, '.gallary_wrap li.gallary_item .pic_box a[href]')) {
+    const href = absolute(a.getAttribute('href'));
+    if (!href || !/photos-view-id-\d+\.html/.test(href) || seen.has(href)) continue;
+    seen.add(href);
+    out.push(href);
+  }
+  return out;
+}
+
+async function fullImageOf(ctx: SiteCtx, viewUrl: string): Promise<string | undefined> {
+  const doc = await ctx.doc(viewUrl);
+  const img =
+    qs<HTMLImageElement>(doc, '#picarea') ??
+    qs<HTMLImageElement>(doc, 'img.photo') ??
+    qs<HTMLImageElement>(doc, '#posselect img');
+  const raw = img?.getAttribute('data-src') ?? img?.getAttribute('src') ?? '';
+  const abs = absolute(raw);
+  if (!abs) return undefined;
+  // 原图必须带 view 页生成的 verify 参数，不能只从缩略图路径推
+  return proxyImage(abs, REFERER);
+}
+
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < items.length) {
+      const i = cursor++;
+      out[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+const homeCache = new Map<string, { at: number; sections: BookSection[] }>();
+const chapterCache = new Map<string, { at: number; content: ChapterContent }>();
+const TTL = 30 * 60_000;
+
+async function homeCloudwn(ctx: SiteCtx): Promise<BookSection[]> {
+  const hit = homeCache.get('home');
+  if (hit && Date.now() - hit.at < TTL) return hit.sections;
+
+  const [latest, rank, albums] = await Promise.all([
+    ctx.doc(BASE + '/').then(parseAlbums),
+    ctx.doc(`${BASE}/albums-favorite_ranking.html`).then(parseAlbums),
+    ctx.doc(`${BASE}/albums.html`).then(parseAlbums),
+  ]);
+  const sections: BookSection[] = [];
+  if (latest.length) sections.push({ title: '最新更新', books: latest.slice(0, 24) });
+  if (rank.length) sections.push({ title: '收藏排行', books: rank.slice(0, 24) });
+  if (albums.length) sections.push({ title: '全部漫画', books: albums.slice(0, 24) });
+  homeCache.set('home', { at: Date.now(), sections });
+  return sections;
+}
+
+async function searchCloudwn(ctx: SiteCtx, keyword: string): Promise<BookRef[]> {
+  const doc = await ctx.doc(`${BASE}/search/?q=${encodeURIComponent(keyword)}`);
+  return parseAlbums(doc).slice(0, 40);
+}
+
+async function detailCloudwn(ctx: SiteCtx, url: string): Promise<BookDetail> {
+  const doc = await ctx.doc(url);
+  const id = albumId(url);
+  if (!id) throw new Error('无法识别漫画编号');
+  const title =
+    clean(qs<HTMLMetaElement>(doc, 'meta[property="og:title"]')?.getAttribute('content')) ||
+    clean((doc.title || '').split(/\s+-\s+/)[0]) ||
+    clean(text(qs(doc, 'h1')));
+  if (!title) throw new Error('没有解析到漫画标题');
+
+  const firstImg = qs<HTMLImageElement>(doc, '.gallary_wrap li.gallary_item img');
+  const rawCover =
+    qs<HTMLMetaElement>(doc, 'meta[property="og:image"]')?.getAttribute('content') ??
+    firstImg?.getAttribute('data-src') ??
+    firstImg?.getAttribute('src') ??
+    undefined;
+
+  const tags = qsa(doc, '.addtags a')
+    .map((el) => text(el))
+    .filter(Boolean);
+  const intro =
+    clean(qs<HTMLMetaElement>(doc, 'meta[name="description"]')?.getAttribute('content')) ||
+    undefined;
+  const pages = pagesOf(doc);
+  const chapters: Chapter[] = [
+    { title: pages > 1 ? `全一话 · ${pages} 张` : '全一话', url },
+  ];
+
+  return {
+    url,
+    title,
+    cover: proxyImage(absolute(rawCover), REFERER),
+    intro,
+    extra: tags.length ? tags.join(' · ') : clean(text(qs(doc, '.info_col'))) || undefined,
+    chapters,
+  };
+}
+
+async function chapterCloudwn(ctx: SiteCtx, url: string): Promise<ChapterContent> {
+  const hit = chapterCache.get(url);
+  if (hit && Date.now() - hit.at < TTL) return hit.content;
+
+  const id = albumId(url);
+  if (!id) throw new Error('无法识别漫画编号');
+  const first = await ctx.doc(url);
+  const pages = Math.max(maxPage(first, id), 1);
+  const restDocs = await mapLimit(
+    Array.from({ length: Math.max(0, pages - 1) }, (_, i) => i + 2),
+    4,
+    async (page) => ctx.doc(pageUrl(id, page)),
+  );
+  const docs = [first, ...restDocs];
+
+  // 先收集每张缩略图对应的 view 页；view 页里的 #picarea 才是原图
+  const viewLinks: string[] = [];
+  const seenViews = new Set<string>();
+  const thumbs: string[] = [];
+  for (const doc of docs) {
+    for (const href of viewLinksOf(doc)) {
+      if (seenViews.has(href)) continue;
+      seenViews.add(href);
+      viewLinks.push(href);
+    }
+    thumbs.push(...imagesOf(doc));
+  }
+
+  let images: string[];
+  if (viewLinks.length) {
+    const full = await mapLimit(viewLinks, 4, async (viewUrl, index) => {
+      try {
+        return (await fullImageOf(ctx, viewUrl)) ?? thumbs[index];
+      } catch {
+        return thumbs[index];
+      }
+    });
+    images = full.filter((src): src is string => !!src);
+  } else {
+    // 兜底：站点改版时至少还能读缩略图
+    images = thumbs;
+  }
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const src of images) {
+    if (!src || seen.has(src)) continue;
+    seen.add(src);
+    unique.push(src);
+  }
+  if (!unique.length) throw new Error('这一话没有解析到图片，可能需要先在站点内验证');
+
+  const content: ChapterContent = { title: '全一话', paragraphs: [], images: unique };
+  chapterCache.set(url, { at: Date.now(), content });
+  return content;
+}
+
+const cloudwn: Site = {
+  id: 'cloudwn',
+  name: 'CloudWN 漫画',
+  icon: '云',
+  color: '#e08a3c',
+  baseUrl: BASE,
+  kind: 'comic',
+  nsfw: true,
+  referer: REFERER,
+
+  home: homeCloudwn,
+  search: searchCloudwn,
+  detail: detailCloudwn,
+  chapter: chapterCloudwn,
+};
+
+export default cloudwn;

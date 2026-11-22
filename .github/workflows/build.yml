@@ -1,0 +1,87 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows portable
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run dist:win
+      - name: Rename artifact
+        shell: pwsh
+        run: |
+          Copy-Item "release/聚合阅读-0.1.0-portable.exe" "release/agg-reader-0.1.0-portable.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: release/agg-reader-0.1.0-portable.exe
+          if-no-files-found: error
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - run: npm ci
+      - run: node scripts/build-android.mjs
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Build APK
+        run: gradle -p apps/android :app:assembleDebug --no-daemon --console=plain
+      - name: Copy artifact
+        run: |
+          mkdir -p release
+          cp apps/android/app/build/outputs/apk/debug/app-debug.apk release/agg-reader-0.1.0-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: release/agg-reader-0.1.0-android.apk
+          if-no-files-found: error
+
+  release:
+    name: Release assets
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/agg-reader-0.1.0-portable.exe
+            release/agg-reader-0.1.0-android.apk
+          generate_release_notes: true

@@ -1,0 +1,36 @@
+{
+  "name": "agg",
+  "private": true,
+  "version": "0.1.0",
+  "description": "聚合阅读启动器",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dist:win": "npm run build && electron-builder --win portable --project apps/desktop",
+    "android:assets": "node scripts/build-android.mjs",
+    "dev": "node scripts/dev.mjs",
+    "start": "node scripts/dev.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "tsc -p tsconfig.json",
+    "test": "node scripts/test-core.mjs && node scripts/test-settings.mjs && node scripts/test-subscription.mjs",
+    "test:core": "node scripts/test-core.mjs",
+    "test:settings": "node scripts/test-settings.mjs",
+    "test:subscription": "node scripts/test-subscription.mjs",
+    "probe": "node scripts/probe.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "hls.js": "^1.7.4"
+  }
+}

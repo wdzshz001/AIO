@@ -1,0 +1,47 @@
+{
+  "name": "agg-desktop",
+  "productName": "聚合阅读",
+  "version": "0.1.0",
+  "private": true,
+  "description": "聚合阅读：小说、动画、漫画聚合客户端",
+  "author": "agg",
+  "license": "MIT",
+  "main": "dist/main.cjs",
+  "build": {
+    "appId": "com.agg.reader",
+    "productName": "聚合阅读",
+    "electronVersion": "45.4.1",
+    "electronDist": "../../node_modules/electron/dist",
+    "asar": true,
+    "directories": {
+      "output": "../../release",
+      "buildResources": "../../assets"
+    },
+    "files": [
+      "dist/**/*",
+      "!dist/**/*.map",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../assets/app.ico",
+        "to": "app.ico"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "../../assets/app.ico",
+      "signAndEditExecutable": false,
+      "artifactName": "聚合阅读-${version}-portable.exe"
+    },
+    "portable": {
+      "requestExecutionLevel": "user",
+      "unicode": true
+    }
+  }
+}
