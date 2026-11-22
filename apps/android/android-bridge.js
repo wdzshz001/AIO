@@ -102,6 +102,9 @@
     setNetworkConfig: function () {
       return Promise.resolve();
     },
+    // Android 当前不参与 Web Bundle 热更新；保持可选方法缺省
+    hotCheck: undefined,
+    hotApply: undefined,
     proxyUrl: syncProxy,
   };
 })();

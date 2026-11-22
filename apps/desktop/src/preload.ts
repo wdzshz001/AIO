@@ -28,5 +28,7 @@ contextBridge.exposeInMainWorld('agg', {
   setTray: (enabled: boolean) => ipcRenderer.invoke('agg:tray', enabled),
   proxyInfo: () => ipcRenderer.invoke('agg:proxy'),
   setNetworkConfig: (opts: { timeoutMs: number }) => ipcRenderer.invoke('agg:network', opts),
+  hotCheck: () => ipcRenderer.invoke('agg:hot-check'),
+  hotApply: (version: string) => ipcRenderer.invoke('agg:hot-apply', version),
   platform: process.platform,
 });

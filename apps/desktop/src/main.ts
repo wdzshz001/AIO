@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu, nativeImage, net, protocol, session,
 import type { Session } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { runSmoke } from './smoke.ts';
 
@@ -96,6 +97,125 @@ let networkTimeoutMs = 30_000;
 let tray: Tray | null = null;
 let trayEnabled = false;
 let quitting = false;
+
+/**
+ * Windows Web Bundle 热更新：
+ * - 只覆盖 index.html / renderer.js / renderer.css
+ * - 主进程/原生能力仍由 EXE 决定
+ * - 先通知，用户在设置里手动下载并应用
+ */
+const HOT_BASE =
+  process.env.AGG_HOT_BASE || 'https://github.com/wdzshz001/AIO/releases/latest/download';
+const HOT_FILES = ['index.html', 'renderer.js', 'renderer.css'] as const;
+let hotRoot: string | null = null;
+
+interface HotManifest {
+  version: string;
+  builtAt?: string;
+  files: Record<string, string>;
+}
+
+function hotBaseDir(): string {
+  return path.join(app.getPath('userData'), 'hot', 'win');
+}
+
+function sha256(buf: Buffer): string {
+  return createHash('sha256').update(buf).digest('hex');
+}
+
+function hotVersionValue(version: string): number[] {
+  return version
+    .replace(/^v/i, '')
+    .split(/[.+-]/)
+    .map((x) => Number.parseInt(x, 10) || 0)
+    .slice(0, 3);
+}
+
+function versionGreater(a: string, b: string): boolean {
+  const av = hotVersionValue(a);
+  const bv = hotVersionValue(b);
+  for (let i = 0; i < 3; i++) {
+    if ((av[i] ?? 0) !== (bv[i] ?? 0)) return (av[i] ?? 0) > (bv[i] ?? 0);
+  }
+  return false;
+}
+
+function readHotCurrent(): (HotManifest & { root: string }) | null {
+  try {
+    const dir = hotBaseDir();
+    const current = JSON.parse(fs.readFileSync(path.join(dir, 'current.json'), 'utf8')) as HotManifest;
+    const root = path.join(dir, current.version.replace(/[^\w.-]/g, '_'));
+    if (!current.version || !current.files || !fs.existsSync(path.join(root, 'index.html'))) return null;
+    for (const name of HOT_FILES) {
+      const file = path.join(root, name);
+      const expected = current.files[name];
+      if (!expected || !fs.existsSync(file)) return null;
+      if (sha256(fs.readFileSync(file)) !== expected) return null;
+    }
+    return { ...current, root };
+  } catch {
+    return null;
+  }
+}
+
+function resolveAggFile(rel: string): string {
+  const hot = hotRoot ? path.resolve(hotRoot, '.' + rel) : '';
+  if (hotRoot && hot.startsWith(hotRoot + path.sep) && fs.existsSync(hot)) return hot;
+  return path.resolve(__dirname, '.' + rel);
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await net.fetch(url, { cache: 'no-store' } as RequestInit);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as T;
+}
+
+async function checkHotUpdate(): Promise<{
+  available: boolean;
+  version?: string;
+  current?: string;
+  error?: string;
+}> {
+  try {
+    const current = readHotCurrent()?.version ?? app.getVersion();
+    const manifest = await fetchJson<HotManifest>(`${HOT_BASE}/hot-win.json`);
+    const available = !!manifest.version && versionGreater(manifest.version, current);
+    return { available, version: manifest.version, current };
+  } catch (e) {
+    return { available: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function applyHotUpdate(version: string): Promise<{ ok: boolean; error?: string; version?: string }> {
+  try {
+    const manifest = await fetchJson<HotManifest>(`${HOT_BASE}/hot-win.json`);
+    if (!manifest.version || manifest.version !== version) throw new Error('版本已变化，请重新检查');
+    const dir = hotBaseDir();
+    const target = path.join(dir, version.replace(/[^\w.-]/g, '_'));
+    const tmp = path.join(dir, `.tmp-${Date.now()}`);
+    fs.mkdirSync(tmp, { recursive: true });
+    for (const name of HOT_FILES) {
+      const res = await net.fetch(`${HOT_BASE}/hot-win-${name}`, { cache: 'no-store' } as RequestInit);
+      if (!res.ok) throw new Error(`下载 ${name} 失败（HTTP ${res.status}）`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      const expected = manifest.files?.[name];
+      if (!expected || sha256(buf) !== expected) throw new Error(`${name} 校验失败`);
+      fs.writeFileSync(path.join(tmp, name), buf);
+    }
+    fs.rmSync(target, { recursive: true, force: true });
+    fs.renameSync(tmp, target);
+    const current = { ...manifest, root: target };
+    const currentPath = path.join(dir, 'current.json');
+    fs.writeFileSync(currentPath + '.tmp', JSON.stringify(current, null, 2));
+    fs.rmSync(currentPath, { force: true });
+    fs.renameSync(currentPath + '.tmp', currentPath);
+    hotRoot = target;
+    setTimeout(() => mainWindow?.webContents.reload(), 700);
+    return { ok: true, version };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 /** 每个站点独立分区，Cookie / 登录态互不干扰 */
 function siteSession(id: string): Session {
@@ -845,6 +965,9 @@ function registerIpc(): void {
     platform: process.platform,
   }));
 
+  ipcMain.handle('agg:hot-check', () => checkHotUpdate());
+  ipcMain.handle('agg:hot-apply', (_e, version: string) => applyHotUpdate(version));
+
   ipcMain.handle('agg:open-data', () => shell.openPath(app.getPath('userData')));
 
   ipcMain.handle('agg:login-item', (_e, enabled: boolean) => {
@@ -974,13 +1097,14 @@ const menu = Menu.buildFromTemplate([
 
 app.whenReady().then(() => {
   session.defaultSession.setUserAgent(UA);
+  hotRoot = readHotCurrent()?.root ?? null;
 
   protocol.handle('agg', (request) => {
     const { pathname } = new URL(request.url);
     const rel = decodeURIComponent(pathname === '/' ? '/index.html' : pathname);
+    const file = resolveAggFile(rel);
     const base = path.resolve(__dirname);
-    const file = path.resolve(base, '.' + rel);
-    if (file !== base && !file.startsWith(base + path.sep)) {
+    if (file !== base && !file.startsWith(base + path.sep) && !(hotRoot && file.startsWith(hotRoot + path.sep))) {
       return new Response('forbidden', { status: 403 });
     }
     return net.fetch(pathToFileURL(file).toString());

@@ -33,6 +33,9 @@ Android：
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索；动画网络与视频链路仍需真机验证
 
+GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构建；`v*` tag 创建 Release
+并附带 Windows 热更新 bundle。热更新方案见 [docs/HOT-UPDATE.md](docs/HOT-UPDATE.md)。
+
 ## 应用与站点
 
 用户只面对「应用」，站点在应用内部聚合，不再有单独的站点入口。

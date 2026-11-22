@@ -69,10 +69,31 @@ jobs:
           path: release/agg-reader-0.1.0-android.apk
           if-no-files-found: error
 
+  hot:
+    name: Windows hot bundle
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build hot bundle
+        env:
+          HOT_VERSION: ${{ github.ref_name }}
+        run: node scripts/build-hot-win.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hot-win
+          path: release/hot-win-*
+          if-no-files-found: error
+
   release:
     name: Release assets
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [windows, android]
+    needs: [windows, android, hot]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -84,4 +105,8 @@ jobs:
           files: |
             release/agg-reader-0.1.0-portable.exe
             release/agg-reader-0.1.0-android.apk
+            release/hot-win.json
+            release/hot-win-index.html
+            release/hot-win-renderer.js
+            release/hot-win-renderer.css
           generate_release_notes: true

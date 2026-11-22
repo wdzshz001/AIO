@@ -178,6 +178,22 @@ export default function App() {
     </div>
   ) : null;
 
+  useEffect(() => {
+    if (!bridge.hotCheck) return;
+    let alive = true;
+    bridge
+      .hotCheck()
+      .then((info) => {
+        if (alive && info?.available) {
+          showToast(`发现新版本 ${info.version}，可在「设置 → 关于」中手动更新`, 6500);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [showToast]);
+
   const route = stack[stack.length - 1];
   const visibleShelf = shelf.filter((e) => !e.siteId || sites.some((s) => s.id === e.siteId));
 

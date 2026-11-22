@@ -853,6 +853,38 @@ function AboutSettings({ onBack }: SectionProps) {
   const [info, setInfo] = useState<{ version?: string; electron?: string; chrome?: string; platform?: string }>({});
   const [copied, setCopied] = useState(false);
   const [updateMsg, setUpdateMsg] = useState('');
+  const [hotBusy, setHotBusy] = useState(false);
+
+  const checkUpdate = async () => {
+    setHotBusy(true);
+    setUpdateMsg('正在检查更新…');
+    try {
+      if (!bridge.hotCheck) {
+        setUpdateMsg('当前构建不支持热更新');
+        return;
+      }
+      const info = await bridge.hotCheck();
+      if (!info.available) {
+        setUpdateMsg(info.error ? `检查失败：${info.error}` : '已是最新版本');
+        return;
+      }
+      setUpdateMsg(`发现 ${info.version}，正在下载…`);
+      if (!bridge.hotApply) {
+        setUpdateMsg('当前构建不支持应用更新');
+        return;
+      }
+      const result = await bridge.hotApply(info.version!);
+      setUpdateMsg(
+        result.ok
+          ? `已更新到 ${info.version}，界面即将刷新…`
+          : `更新失败：${result.error ?? '未知错误'}`,
+      );
+    } catch (e) {
+      setUpdateMsg(`更新失败：${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setHotBusy(false);
+    }
+  };
 
   useEffect(() => {
     bridge.appInfo?.().then(setInfo).catch(() => undefined);
@@ -888,11 +920,8 @@ function AboutSettings({ onBack }: SectionProps) {
           </span>
         </Field>
         <div className="settings-inline-actions">
-          <button
-            className="ghost-btn"
-            onClick={() => setUpdateMsg('当前为本地构建，暂无更新源；请手动替换程序版本。')}
-          >
-            检查更新
+          <button className="ghost-btn" disabled={hotBusy} onClick={() => void checkUpdate()}>
+            {hotBusy ? '检查中…' : '检查更新'}
           </button>
         </div>
         {updateMsg && <p className="muted small">{updateMsg}</p>}

@@ -286,6 +286,23 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       return;
     }
 
+    if (process.env.AGG_SMOKE_HOT === '1') {
+      const check = await js(`(async () => {
+        try { return await window.agg.hotCheck(); } catch (e) { return { error: String(e) }; }
+      })()`);
+      note('hot check: ' + JSON.stringify(check));
+      if (check?.version) {
+        const applied = await js(`(async () => {
+          try { return await window.agg.hotApply(${JSON.stringify(check.version)}); } catch (e) { return { error: String(e) }; }
+        })()`);
+        note('hot apply: ' + JSON.stringify(applied));
+      }
+      await wait(2500);
+      await shot('hot-result');
+      note('HOT DONE');
+      return;
+    }
+
     if (process.env.AGG_SMOKE_AUTOQI === '1') {
       await js(`document.querySelectorAll('.app-card')[0].click()`);
       await until(`document.querySelectorAll('.book-card').length > 0`, 60_000, 'autoqi-home');

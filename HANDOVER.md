@@ -51,6 +51,9 @@
   关闭开机启动项（移动 EXE 后无效）。
 - 已实测：portable EXE 启动 → 设置专项冒烟 `SETTINGS OK`，`data/` 正常创建；
   交付包附带 `README.txt` 与 SHA256。
+- **Windows 热更新**：`hot:win` bundle + GitHub Release；启动只提示，About 页手动检查下载；
+  主进程覆盖 `agg://` 的 index/renderer/css，SHA256 校验，失败回退内置版本。
+- **GitHub Actions**：`.github/workflows/build.yml`，push main 构建，`v*` tag 发布安装包 + 热更新资产。
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。

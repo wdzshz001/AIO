@@ -1,17 +1,21 @@
 # Git CI 与双端热更新方案
 
-## 0. 当前状态
+## 0. 当前实现（已确认的选项）
 
-- 仓库已 `git init` 并生成首个提交（本地）。
-- `.github/workflows/build.yml` 已配置：
-  - push / PR / tag 触发
-  - Windows：`npm run dist:win` → portable EXE
-  - Android：`build-android.mjs` + Gradle → debug APK
-  - tag：把两个安装包上传到 GitHub Release
-- 还没有远端地址和推送凭据，`git remote` 为空。
+- 仓库：`https://github.com/wdzshz001/AIO`，main 已可 push。
+- 发布策略：push main 只跑 CI 构建；`v*` tag 才创建 GitHub Release。
+- 热更新范围：**先 Windows Web Bundle**；Android 本轮仍走 APK。
+- 更新时机：启动只检查并提示，**用户在 设置→关于 手动点击检查更新**后下载并应用。
+- 已实现：
+  - CI workflow 的 `hot` job 在 tag 时生成 `hot-win.json` + 3 个资源
+  - Windows 主进程 `hot-check` / `hot-apply`、overlay 加载、SHA256 校验、下次/立即 reload
+  - 设置 About「检查更新」按钮
+  - 启动时顶部 Toast 提示“发现新版本”
+- 未实现：Android 热更新、自动下载并强制重启。
 
-> 需要用户提供空的 Git 仓库地址（GitHub/Gitee/GitLab），以及是否公开。
-> CI 不依赖远端即可先本地运行；推送后自动生效。
+> 当前仓库：`https://github.com/wdzshz001/AIO`，`main` 已推送；CI 由该仓库的 Actions 执行。
+> 本地调试可用 `AGG_HOT_BASE=http://127.0.0.1:8765` 指向静态服务。
+
 
 ---
 

@@ -169,6 +169,9 @@ export interface HostBridge {
   setTray?(enabled: boolean): Promise<void>;
   proxyInfo?(): Promise<string>;
   setNetworkConfig?(opts: { timeoutMs: number }): Promise<void>;
+  /** 仅桌面端：检查/应用 Windows Web Bundle 热更新 */
+  hotCheck?(): Promise<{ available: boolean; version?: string; current?: string; error?: string }>;
+  hotApply?(version: string): Promise<{ ok: boolean; error?: string; version?: string }>;
 }
 
 export interface AppInfo {

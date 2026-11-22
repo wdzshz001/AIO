@@ -11,6 +11,7 @@
     "build": "node scripts/build.mjs",
     "dist:win": "npm run build && electron-builder --win portable --project apps/desktop",
     "android:assets": "node scripts/build-android.mjs",
+    "hot:win": "node scripts/build-hot-win.mjs",
     "dev": "node scripts/dev.mjs",
     "start": "node scripts/dev.mjs",
     "smoke": "node scripts/smoke.mjs",

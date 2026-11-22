@@ -167,7 +167,29 @@ apps/android/
 
 ---
 
-## 四、每次改动后的推荐验证
+## 四、GitHub Actions
+
+`.github/workflows/build.yml`：
+
+- push main / PR：构建 Windows portable 与 Android APK（只上传 artifact，不发布）
+- `v*` tag：额外构建 `hot-win` bundle，并创建 GitHub Release
+- Release 资产：
+  - `agg-reader-0.1.0-portable.exe`
+  - `agg-reader-0.1.0-android.apk`
+  - `hot-win.json` / `hot-win-index.html` / `hot-win-renderer.js` / `hot-win-renderer.css`
+
+本地热更新 bundle：
+
+```bash
+HOT_VERSION=0.1.1 npm run hot:win
+```
+
+产物为 `release/hot-win*`。Windows 端只覆盖 UI/adapters bundle；壳/原生改动仍需重新出 EXE。
+详见 [HOT-UPDATE.md](HOT-UPDATE.md)。
+
+---
+
+## 五、每次改动后的推荐验证
 
 ```powershell
 # 共用
