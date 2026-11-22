@@ -2,7 +2,8 @@
 
 > 给下一个对话的上下文。最后更新：2026-11-22 晚（双端打包 + 起点自动换源 + 动画自动选源）。
 >
-> 双端编译：[docs/BUILD.md](docs/BUILD.md)；双端差异/影响范围：[docs/PLATFORM.md](docs/PLATFORM.md)。
+> 双端编译：[docs/BUILD.md](docs/BUILD.md)；双端差异/影响范围：[docs/PLATFORM.md](docs/PLATFORM.md)；
+> Git CI 与热更新：[docs/HOT-UPDATE.md](docs/HOT-UPDATE.md)。
 
 ## 一、项目是什么
 

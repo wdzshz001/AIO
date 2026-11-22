@@ -6,6 +6,7 @@
 
 > 项目当前进度、已知问题、待办与环境踩坑，见 [HANDOVER.md](HANDOVER.md)。
 > 双端编译步骤见 [docs/BUILD.md](docs/BUILD.md)，双端架构差异/修改影响范围见 [docs/PLATFORM.md](docs/PLATFORM.md)。
+> Git CI 与热更新方案见 [docs/HOT-UPDATE.md](docs/HOT-UPDATE.md)。
 > 与 animeko 的逐项对照见 [docs/ANI-COMPARISON.md](docs/ANI-COMPARISON.md)。
 
 当前完成 **P0**：Windows 桌面端，三个应用（小说 / 动画 / 漫画）跑通完整链路。动画已切到「Bangumi 条目 → 单集 → 选源 → 播放」。
