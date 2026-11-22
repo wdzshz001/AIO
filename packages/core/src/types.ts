@@ -172,6 +172,13 @@ export interface HostBridge {
   /** 仅桌面端：检查/应用 Windows Web Bundle 热更新 */
   hotCheck?(): Promise<{ available: boolean; version?: string; current?: string; error?: string }>;
   hotApply?(version: string): Promise<{ ok: boolean; error?: string; version?: string }>;
+  /** Android：检查/下载最新 APK */
+  appUpdateCheck?(): Promise<{ available: boolean; version?: string; current?: string; url?: string; error?: string }>;
+  appUpdateInstall?(url: string): Promise<{ ok: boolean; error?: string }>;
+  /** Android：漫画全屏时隐藏系统栏 */
+  setImmersive?(on: boolean): Promise<void> | void;
+  /** Android：视频播放时进入横屏全屏 */
+  setVideoFullscreen?(on: boolean): Promise<void> | void;
 }
 
 export interface AppInfo {

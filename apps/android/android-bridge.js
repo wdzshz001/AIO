@@ -102,9 +102,21 @@
     setNetworkConfig: function () {
       return Promise.resolve();
     },
-    // Android 当前不参与 Web Bundle 热更新；保持可选方法缺省
+    // Android 当前不参与 Web Bundle 热更新；走 APK 下载更新
     hotCheck: undefined,
     hotApply: undefined,
+    appUpdateCheck: function () {
+      return call('appUpdateCheck', []);
+    },
+    appUpdateInstall: function (url) {
+      return call('appUpdateInstall', [url]);
+    },
+    setImmersive: function (on) {
+      return call('setImmersive', [!!on]);
+    },
+    setVideoFullscreen: function (on) {
+      return call('setVideoFullscreen', [!!on]);
+    },
     proxyUrl: syncProxy,
   };
 })();

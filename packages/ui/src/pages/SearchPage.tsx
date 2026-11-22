@@ -8,6 +8,7 @@ import {
 } from '@agg/adapters';
 import Cover from '../components/Cover';
 import { bridge } from '../bridge';
+import { addSearchHistory, clearSearchHistory, loadSearchHistory } from '../searchHistory';
 import { useSites } from '../sites';
 
 interface Props {
@@ -61,6 +62,8 @@ export default function SearchPage({
   const [subjectError, setSubjectError] = useState('');
   const [category, setCategory] = useState<string>(initialCategory ?? 'all');
   const [siteFilter, setSiteFilter] = useState<string>('all');
+  const [history, setHistory] = useState<string[]>(() => loadSearchHistory());
+  const [focused, setFocused] = useState(false);
   const runRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -218,8 +221,12 @@ export default function SearchPage({
   );
 
   const submit = () => {
-    setQuery(input.trim());
-    run(input);
+    const q = input.trim();
+    if (!q) return;
+    setQuery(q);
+    setHistory(addSearchHistory(q));
+    setFocused(false);
+    run(q);
   };
 
   const failed = visibleSites.filter((s) => states[s.id]?.status === 'error');
@@ -234,16 +241,56 @@ export default function SearchPage({
           ←
         </button>
         <div className="search-box">
-          <input
-            ref={inputRef}
-            className="search-input-lg"
-            value={input}
-            placeholder="搜索小说、动画或漫画…"
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submit();
-            }}
-          />
+          <div className="search-shell">
+            <input
+              ref={inputRef}
+              className="search-input-lg"
+              value={input}
+              placeholder="搜索小说、动画或漫画…"
+              onChange={(e) => setInput(e.target.value)}
+              onFocus={() => {
+                setHistory(loadSearchHistory());
+                setFocused(true);
+              }}
+              onBlur={() => window.setTimeout(() => setFocused(false), 140)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit();
+              }}
+            />
+            {focused && history.length > 0 && (
+              <div className="search-history">
+                <div className="search-history-head">
+                  <span>搜索历史</span>
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      clearSearchHistory();
+                      setHistory([]);
+                    }}
+                  >
+                    清除
+                  </button>
+                </div>
+                {history.map((item) => (
+                  <button
+                    key={item}
+                    className="search-history-item"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setInput(item);
+                      setQuery(item);
+                      setHistory(addSearchHistory(item));
+                      setFocused(false);
+                      run(item);
+                    }}
+                  >
+                    <span>{item}</span>
+                    <span className="search-history-arrow">↗</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button className="primary-btn" onClick={submit}>
             搜索
           </button>

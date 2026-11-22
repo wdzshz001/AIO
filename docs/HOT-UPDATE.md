@@ -115,7 +115,20 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 
 ---
 
-## 2. 备选方案：整包自动更新
+## 2. Android：不做热更新，走 APK 下载更新（已实现）
+
+- 设置 → 关于 → 检查更新
+- `NativeAgg.appUpdateCheck` 请求 Release 的 `android-latest.json`
+- 版本大于 `BuildConfig.VERSION_NAME` 时，`DownloadManager` 下载
+  `agg-reader-android.apk`
+- 下载完成广播自动打开系统安装器（需要用户允许安装未知来源）
+- APK 使用固定 debug 签名，本地/CI 可互相覆盖安装
+
+再次强调：Android 原生壳/权限变化仍需新 APK；只有新的 APK 才能继续获得后续更新能力。
+
+---
+
+## 3. 备选方案：整包自动更新
 
 | 端 | 方案 | 问题 |
 |---|---|---|
@@ -126,7 +139,7 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 
 ---
 
-## 3. Git 连接方式
+## 4. Git 连接方式
 
 应用不直接连 Git，而是连 **CI 发布出来的静态资产**：
 
@@ -151,13 +164,13 @@ git push tag v0.1.4
 
 - Actions：`https://github.com/wdzshz001/AIO/actions`
 - Release：`https://github.com/wdzshz001/AIO/releases`
-- `v0.1.1` / `v0.1.2` / `v0.1.3` / `v0.1.4` 已成功跑完双端 + hot + release
+- `v0.1.1` / `v0.1.2` / `v0.1.3` / `v0.1.4` / `v0.1.5` 已成功跑完双端 + hot + release
 - `v0.1.2` 的 `hot-win.json` 可被客户端读取，实测检查/应用成功
 - Android debug 签名已固定为 `apps/android/debug.keystore`，本地/CI 可覆盖安装
 
 ---
 
-## 4. 当前已确认的决定
+## 5. 当前已确认的决定
 
 1. Git：`https://github.com/wdzshz001/AIO`，公开仓库。
 2. 热更新范围：先 Windows Web Bundle；Android 暂走 APK（后续可加单文件 HTML）。

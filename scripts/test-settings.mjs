@@ -7,7 +7,9 @@ const sites = [safe, adult];
 
 // 默认飞行模式关闭（升级 v2 时也重置一次）
 assert.equal(DEFAULT_SETTINGS.flightMode, false);
-assert.equal(DEFAULT_SETTINGS.settingsVersion, 3);
+assert.equal(DEFAULT_SETTINGS.settingsVersion, 4);
+assert.equal(DEFAULT_SETTINGS.preferredSource.comic, "mangacopy");
+assert.equal(DEFAULT_SETTINGS.preferredSource.anime, "sub:yinghua-dongman");
 
 const off = { flightMode: false, sourceNsfw: {} };
 const on = { flightMode: true, sourceNsfw: {} };

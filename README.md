@@ -24,13 +24,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.1.4-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.1.5-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.1.4-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.1.5-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -95,7 +95,8 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **飞行模式**：开启后显示全部源；关闭时隐藏所有被标记的源。旁边的 `⋯` 进入
   **NSFW 标记**三级页，逐源标记；CloudWN / MYCOMIC 默认标记，拷贝漫画默认普通。
 - **内容源**：逐源启用/禁用、上下排序、分类首选源、单源健康检查、验证、清 Cookie。
-- **阅读与播放**：小说字号/行距/段距/正文宽度/主题；漫画铺满或完整显示；
+- **搜索**：点击搜索框显示最近 12 条搜索历史，可单条重搜或一键清除。
+- **阅读与播放**：小说字号/行距/段距/正文宽度/主题；漫画默认全屏阅读（隐藏顶部标题）；
   动画自动连播、默认优先源、倍速、静音、默认清晰度。
 - **外观**：深色 / 浅色 / 跟随系统、强调色、紧凑/舒适、减少动画。
 - **启动与搜索**：首页/上次页面/指定应用启动、开机启动、最小化到托盘、默认搜索分类。

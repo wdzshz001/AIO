@@ -93,12 +93,15 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  settingsVersion: 3,
+  settingsVersion: 4,
   flightMode: false,
   sourceNsfw: {},
   sourceEnabled: {},
   sourceRank: {},
-  preferredSource: {},
+  preferredSource: {
+    comic: 'mangacopy',
+    anime: 'sub:yinghua-dongman',
+  },
   searchCategory: 'all',
   appearance: {
     theme: 'dark',
@@ -139,11 +142,18 @@ function clamp(n: number, min: number, max: number, fallback: number): number {
 export function loadSettings(): AppSettings {
   const raw = read<Partial<AppSettings>>(SETTINGS_KEY, {});
   const d = DEFAULT_SETTINGS;
+  const rawVersion = Number(raw.settingsVersion) || 0;
   const appearance = { ...d.appearance, ...(raw.appearance ?? {}) };
   const startup = { ...d.startup, ...(raw.startup ?? {}) };
   const network = { ...d.network, ...(raw.network ?? {}) };
   const privacy = { ...d.privacy, ...(raw.privacy ?? {}) };
   const playback = { ...d.playback, ...(raw.playback ?? {}) };
+  // v4：首次加入默认首选源（漫画=拷贝，动画=樱花动漫）。
+  // 升级时只补缺失项；升级完成后用户仍可手动清空。
+  const preferredSource =
+    rawVersion < 4
+      ? { ...d.preferredSource, ...(raw.preferredSource ?? {}) }
+      : (raw.preferredSource ?? {});
 
   return {
     ...d,
@@ -155,14 +165,11 @@ export function loadSettings(): AppSettings {
         : raw.settingsVersion == null && typeof raw.flightMode === 'boolean'
           ? !raw.flightMode
           : raw.flightMode === true,
-    settingsVersion: 3,
+    settingsVersion: 4,
     sourceNsfw: boolMap(raw.sourceNsfw),
     sourceEnabled: boolMap(raw.sourceEnabled),
     sourceRank: numberMap(raw.sourceRank),
-    preferredSource:
-      raw.preferredSource && typeof raw.preferredSource === 'object'
-        ? (raw.preferredSource as Partial<Record<SiteKind, string>>)
-        : {},
+    preferredSource,
     searchCategory: (['all', 'novel', 'anime', 'comic'] as const).includes(
       raw.searchCategory as 'all',
     )
@@ -202,7 +209,7 @@ export function loadSettings(): AppSettings {
 }
 
 export function saveSettings(settings: AppSettings): void {
-  write(SETTINGS_KEY, { ...settings, settingsVersion: 3 });
+  write(SETTINGS_KEY, { ...settings, settingsVersion: 4 });
 }
 
 /** 源是否随飞行模式隐藏：用户逐源设置优先于源默认值 */

@@ -75,6 +75,20 @@ export default function VideoPlayer({
   const attemptRef = useRef(attempt);
   attemptRef.current = attempt;
 
+  // Android：进入视频页默认横屏全屏，离开时恢复
+  useEffect(() => {
+    const agg = (globalThis as {
+      agg?: { platform?: string; setVideoFullscreen?: (on: boolean) => unknown };
+    }).agg;
+    if (agg?.platform === 'android' && typeof agg.setVideoFullscreen === 'function') {
+      void agg.setVideoFullscreen(true);
+      return () => {
+        void agg.setVideoFullscreen?.(false);
+      };
+    }
+    return undefined;
+  }, []);
+
   useEffect(() => {
     const video = ref.current;
     if (!video) return;

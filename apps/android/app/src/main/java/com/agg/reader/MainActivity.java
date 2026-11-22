@@ -2,7 +2,17 @@ package com.agg.reader;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -13,13 +23,18 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
+    private static final String APK_MIME = "application/vnd.android.package-archive";
     private FrameLayout root;
     private WebView webView;
     private MediaProxy mediaProxy;
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
+    private DownloadManager downloadManager;
+    private long updateDownloadId = -1;
+    private BroadcastReceiver downloadReceiver;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -107,6 +122,82 @@ public class MainActivity extends Activity {
 
         webView.loadUrl("file:///android_asset/www/index.html");
         root.requestApplyInsets();
+
+        downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        downloadReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (id <= 0 || id != updateDownloadId) return;
+                try {
+                    Uri uri = downloadManager.getUriForDownloadedFile(id);
+                    if (uri == null) {
+                        Toast.makeText(MainActivity.this, "安装包下载失败", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    Intent install = new Intent(Intent.ACTION_VIEW);
+                    install.setDataAndType(uri, APK_MIME);
+                    install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(install);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "无法打开安装器，请到下载目录手动安装", Toast.LENGTH_LONG).show();
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(downloadReceiver, filter, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(downloadReceiver, filter);
+        }
+    }
+
+    /** 下载新版 APK；完成后由 downloadReceiver 自动打开系统安装器 */
+    void downloadApk(String url) {
+        try {
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+            req.setTitle("聚合阅读更新");
+            req.setDescription("正在下载最新 APK");
+            req.setMimeType(APK_MIME);
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "agg-reader-update.apk");
+            updateDownloadId = downloadManager.enqueue(req);
+        } catch (Exception e) {
+            Toast.makeText(this, "下载失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    void setAppImmersive(boolean on) {
+        runOnUiThread(() -> {
+            View decor = getWindow().getDecorView();
+            if (on) {
+                decor.setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            } else {
+                decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            }
+        });
+    }
+
+    /** 动画视频默认横屏全屏；退出时恢复系统方向 */
+    void setVideoFullscreen(boolean on) {
+        runOnUiThread(() -> {
+            if (on) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                setAppImmersive(true);
+            } else {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                setAppImmersive(false);
+            }
+        });
     }
 
     public FrameLayout getRoot() {
@@ -131,6 +222,10 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        try {
+            if (downloadReceiver != null) unregisterReceiver(downloadReceiver);
+        } catch (Exception ignored) {
+        }
         try {
             webView.destroy();
         } catch (Exception ignored) {

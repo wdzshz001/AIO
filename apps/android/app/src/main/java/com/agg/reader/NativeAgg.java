@@ -49,6 +49,8 @@ import okhttp3.ResponseBody;
 /** window.agg 的 Android 实现。 */
 public final class NativeAgg {
     private static final String TAG = "AggNative";
+    private static final String UPDATE_MANIFEST =
+            "https://github.com/wdzshz001/AIO/releases/latest/download/android-latest.json";
     static final String UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -127,8 +129,7 @@ public final class NativeAgg {
         return mediaProxy.proxyUrl(url, referer, ua, ck);
     }
 
-    private Object dispatch(String method, JSONArray args) throws Exception {
-        switch (method) {
+    private Object dispatch(String method, JSONArray args) throws Exception {        switch (method) {
             case "fetchHtml":
                 return fetchHtml(args.optString(1), args.optString(2, null));
             case "request":
@@ -169,6 +170,23 @@ public final class NativeAgg {
                 return mediaProxy.getPort() > 0
                         ? "本地代理 127.0.0.1:" + mediaProxy.getPort()
                         : "直连";
+            case "appUpdateCheck":
+                return checkAppUpdate();
+            case "appUpdateInstall": {
+                String url = args.optString(0);
+                main.post(() -> activity.downloadApk(url));
+                return true;
+            }
+            case "setImmersive": {
+                boolean on = args.optBoolean(0);
+                main.post(() -> activity.setAppImmersive(on));
+                return true;
+            }
+            case "setVideoFullscreen": {
+                boolean on = args.optBoolean(0);
+                main.post(() -> activity.setVideoFullscreen(on));
+                return true;
+            }
             case "setNetworkConfig":
             case "setLoginItem":
             case "setTray":
@@ -494,6 +512,48 @@ public final class NativeAgg {
             } catch (Exception ignored) {
             }
         });
+    }
+
+    private Object checkAppUpdate() throws Exception {
+        Request req = new Request.Builder()
+                .url(UPDATE_MANIFEST)
+                .header("User-Agent", UA)
+                .header("Accept", "application/json")
+                .build();
+        JSONObject out = new JSONObject();
+        out.put("current", BuildConfig.VERSION_NAME);
+        try (Response res = http.newCall(req).execute()) {
+            if (!res.isSuccessful()) {
+                out.put("available", false);
+                out.put("error", "HTTP " + res.code());
+                return out;
+            }
+            ResponseBody body = res.body();
+            JSONObject json = new JSONObject(body == null ? "{}" : body.string());
+            String version = json.optString("version", "");
+            String url = json.optString("apkUrl", "");
+            if (url.isEmpty()) {
+                url = "https://github.com/wdzshz001/AIO/releases/latest/download/agg-reader-android.apk";
+            }
+            out.put("version", version);
+            out.put("url", url);
+            out.put("available", versionValue(version) > versionValue(BuildConfig.VERSION_NAME));
+            return out;
+        }
+    }
+
+    private static int versionValue(String version) {
+        String[] parts = version.replaceFirst("^v", "").split("\\.");
+        int major = 0;
+        int minor = 0;
+        int patch = 0;
+        try {
+            major = parts.length > 0 ? Integer.parseInt(parts[0].replaceAll("\\D.*$", "")) : 0;
+            minor = parts.length > 1 ? Integer.parseInt(parts[1].replaceAll("\\D.*$", "")) : 0;
+            patch = parts.length > 2 ? Integer.parseInt(parts[2].replaceAll("\\D.*$", "")) : 0;
+        } catch (Exception ignored) {
+        }
+        return major * 10000 + minor * 100 + patch;
     }
 
     private static String unquote(String value) {

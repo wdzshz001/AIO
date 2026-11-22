@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AppDef } from '@agg/core';
 import { formatDuration, formatTime, type ShelfEntry } from '../store';
+import { addSearchHistory, clearSearchHistory, loadSearchHistory } from '../searchHistory';
 import Cover from '../components/Cover';
 
 interface Props {
@@ -48,13 +49,18 @@ function chapterText(entry: ShelfEntry): string {
 
 export default function Launcher({ apps, shelf, blurCovers, onOpenApp, onOpenEntry, onSearch }: Props) {
   const [keyword, setKeyword] = useState('');
+  const [history, setHistory] = useState<string[]>(() => loadSearchHistory());
+  const [focused, setFocused] = useState(false);
   const latest = shelf[0];
   const latestProgress = latest ? progressOf(latest) : null;
   const recent = shelf.slice(1, 9);
 
   const submit = () => {
     const q = keyword.trim();
-    if (q) onSearch(q);
+    if (!q) return;
+    setHistory(addSearchHistory(q));
+    setFocused(false);
+    onSearch(q);
   };
 
   return (
@@ -68,15 +74,54 @@ export default function Launcher({ apps, shelf, blurCovers, onOpenApp, onOpenEnt
           </div>
         </div>
         <div className="launcher-search">
-          <input
-            className="search-input-lg"
-            value={keyword}
-            placeholder="搜索小说、动画或漫画…"
-            onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submit();
-            }}
-          />
+          <div className="search-shell">
+            <input
+              className="search-input-lg"
+              value={keyword}
+              placeholder="搜索小说、动画或漫画…"
+              onChange={(e) => setKeyword(e.target.value)}
+              onFocus={() => {
+                setHistory(loadSearchHistory());
+                setFocused(true);
+              }}
+              onBlur={() => window.setTimeout(() => setFocused(false), 140)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit();
+              }}
+            />
+            {focused && history.length > 0 && (
+              <div className="search-history">
+                <div className="search-history-head">
+                  <span>搜索历史</span>
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      clearSearchHistory();
+                      setHistory([]);
+                    }}
+                  >
+                    清除
+                  </button>
+                </div>
+                {history.map((item) => (
+                  <button
+                    key={item}
+                    className="search-history-item"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setKeyword(item);
+                      setHistory(addSearchHistory(item));
+                      setFocused(false);
+                      onSearch(item);
+                    }}
+                  >
+                    <span>{item}</span>
+                    <span className="search-history-arrow">↗</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button className="primary-btn" onClick={submit}>
             搜索
           </button>

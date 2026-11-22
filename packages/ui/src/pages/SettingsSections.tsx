@@ -884,6 +884,25 @@ function AboutSettings({ onBack }: SectionProps) {
     setHotBusy(true);
     setUpdateMsg('正在检查更新…');
     try {
+      if (bridge.appUpdateCheck) {
+        const info = await bridge.appUpdateCheck();
+        if (!info.available) {
+          setUpdateMsg(info.error ? `检查失败：${info.error}` : '已是最新版本');
+          return;
+        }
+        setUpdateMsg(`发现 ${info.version}，正在下载安装包…`);
+        if (!bridge.appUpdateInstall || !info.url) {
+          setUpdateMsg('当前构建不支持应用更新');
+          return;
+        }
+        const result = await bridge.appUpdateInstall(info.url);
+        setUpdateMsg(
+          result.ok
+            ? `已开始下载 ${info.version}，完成后会自动打开安装器`
+            : `更新失败：${result.error ?? '未知错误'}`,
+        );
+        return;
+      }
       if (!bridge.hotCheck) {
         setUpdateMsg('当前构建不支持热更新');
         return;

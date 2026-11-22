@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Chapter, ChapterContent, Site, SiteCtx } from '@agg/core';
 import { formatDuration, loadPrefs, savePrefs, type ReaderPrefs } from '../store';
 import { useSites } from '../sites';
+import { bridge } from '../bridge';
 import VideoPlayer from '../components/VideoPlayer';
 
 interface Props {
@@ -70,6 +71,7 @@ export default function Reader({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [prefs, setPrefs] = useState<ReaderPrefs>(() => loadPrefs());
+  const [fullscreen, setFullscreen] = useState(site.kind === 'comic');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [playError, setPlayError] = useState('');
@@ -86,6 +88,21 @@ export default function Reader({
 
   const chapter = chapters[index];
   const startAt = index === firstIndexRef.current ? initialPosition : undefined;
+
+  // 漫画/全屏阅读时隐藏系统栏（Android 由原生桥实现，桌面端忽略）
+  useEffect(() => {
+    void bridge.setImmersive?.(fullscreen);
+    return () => {
+      if (fullscreen) void bridge.setImmersive?.(false);
+    };
+  }, [fullscreen]);
+
+  const isAndroid =
+    (globalThis as { agg?: { platform?: string } }).agg?.platform === 'android';
+  useEffect(() => {
+    // Android 动画视频默认横屏全屏；桌面端保留标题栏
+    if (isAndroid && content?.video) setFullscreen(true);
+  }, [content?.video, isAndroid]);
 
   useEffect(() => {
     let alive = true;
@@ -288,29 +305,48 @@ export default function Reader({
   };
 
   return (
-    <div className={'reader theme-' + prefs.theme}>
-      <header className="reader-head">
-        <button className="icon-btn" onClick={onBack} title="返回目录">
-          ←
-        </button>
-        <div className="reader-head-title">
-          <span className="reader-book">{title}</span>
-          <span className="reader-chapter">{prettyTitle(chapter?.title ?? '')}</span>
-        </div>
-        {onSwitchSource && content?.video && (
-          <button className="icon-btn switch-btn" onClick={onSwitchSource} title="换源">
-            换源
+    <div className={'reader theme-' + prefs.theme + (fullscreen ? ' focus' : '')}>
+      {!fullscreen && (
+        <header className="reader-head">
+          <button className="icon-btn" onClick={onBack} title="返回目录">
+            ←
           </button>
-        )}
+          <div className="reader-head-title">
+            <span className="reader-book">{title}</span>
+            <span className="reader-chapter">{prettyTitle(chapter?.title ?? '')}</span>
+          </div>
+          {site.kind === 'comic' && (
+            <button className="icon-btn" onClick={() => setFullscreen(true)} title="全屏阅读">
+              全屏
+            </button>
+          )}
+          {onSwitchSource && content?.video && (
+            <button className="icon-btn switch-btn" onClick={onSwitchSource} title="换源">
+              换源
+            </button>
+          )}
+          <button
+            className={'icon-btn' + (settingsOpen ? ' active' : '')}
+            onClick={() => setSettingsOpen((v) => !v)}
+            title="阅读设置"
+            style={content?.video || content?.images?.length ? { visibility: 'hidden' } : undefined}
+          >
+            Aa
+          </button>
+        </header>
+      )}
+
+      {fullscreen && (
         <button
-          className={'icon-btn' + (settingsOpen ? ' active' : '')}
-          onClick={() => setSettingsOpen((v) => !v)}
-          title="阅读设置"
-          style={content?.video || content?.images?.length ? { visibility: 'hidden' } : undefined}
+          className="reader-exit-focus"
+          onClick={() => {
+            setFullscreen(false);
+            if (content?.video) void bridge.setVideoFullscreen?.(false);
+          }}
         >
-          Aa
+          退出全屏
         </button>
-      </header>
+      )}
 
       {settingsOpen && (
         <div className="settings-panel">
@@ -445,22 +481,24 @@ export default function Reader({
           </article>
         )}
 
-        <nav className="reader-nav">
-          <button className="ghost-btn" disabled={index <= 0} onClick={() => onNavigate(index - 1)}>
-            {site.kind === 'comic' ? '上一话' : '上一章'}
-          </button>
-          <span className="reader-pos">
-            {index + 1} / {chapters.length} ·{' '}
-            {content?.images?.length ? `P${page}/${content.images.length}` : `${percent}%`}
-          </span>
-          <button
-            className="ghost-btn"
-            disabled={index >= chapters.length - 1}
-            onClick={() => onNavigate(index + 1)}
-          >
-            {site.kind === 'comic' ? '下一话' : '下一章'}
-          </button>
-        </nav>
+        {!fullscreen && (
+          <nav className="reader-nav">
+            <button className="ghost-btn" disabled={index <= 0} onClick={() => onNavigate(index - 1)}>
+              {site.kind === 'comic' ? '上一话' : '上一章'}
+            </button>
+            <span className="reader-pos">
+              {index + 1} / {chapters.length} ·{' '}
+              {content?.images?.length ? `P${page}/${content.images.length}` : `${percent}%`}
+            </span>
+            <button
+              className="ghost-btn"
+              disabled={index >= chapters.length - 1}
+              onClick={() => onNavigate(index + 1)}
+            >
+              {site.kind === 'comic' ? '下一话' : '下一章'}
+            </button>
+          </nav>
+        )}
       </div>
     </div>
   );
