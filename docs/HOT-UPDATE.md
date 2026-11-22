@@ -150,8 +150,9 @@ git push tag v0.1.2
 
 - Actions：`https://github.com/wdzshz001/AIO/actions`
 - Release：`https://github.com/wdzshz001/AIO/releases`
-- `v0.1.1` / `v0.1.2` 已成功跑完双端 + hot + release
+- `v0.1.1` / `v0.1.2` / `v0.1.3` 已成功跑完双端 + hot + release
 - `v0.1.2` 的 `hot-win.json` 可被客户端读取，实测检查/应用成功
+- Android debug 签名已固定为 `apps/android/debug.keystore`，本地/CI 可覆盖安装
 
 ---
 
