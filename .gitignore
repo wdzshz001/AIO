@@ -16,4 +16,5 @@ apps/android/.idea/
 apps/android/app/src/main/assets/www/
 *.jks
 *.keystore
+!apps/android/debug.keystore
 

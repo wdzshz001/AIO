@@ -30,6 +30,9 @@ C:\za\android-tools\gradle-8.10.2\bin\gradle.bat -p apps/android :app:assembleDe
 
 产物：`apps/android/app/build/outputs/apk/debug/app-debug.apk`
 
+签名：`apps/android/debug.keystore`（自用固定 debug 证书，alias `androiddebugkey`，
+密码 `android`）。本地和 CI 使用同一证书，APK 可互相覆盖安装；不要用于正式商店分发。
+
 ## 已知限制
 
 - 站点 Cookie 目前是全局 CookieManager，没有按站点隔离；小范围自用可接受。

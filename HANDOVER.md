@@ -53,7 +53,10 @@
   交付包附带 `README.txt` 与 SHA256。
 - **Windows 热更新**：`hot:win` bundle + GitHub Release；启动只提示，About 页手动检查下载；
   主进程覆盖 `agg://` 的 index/renderer/css，SHA256 校验，失败回退内置版本。
-- **GitHub Actions**：`.github/workflows/build.yml`，push main 构建，`v*` tag 发布安装包 + 热更新资产。
+- **Android 签名**：`apps/android/debug.keystore` 是自用固定 debug 证书，CI 和本地一致，
+  APK 可覆盖安装；不要用于正式分发。
+- **GitHub Actions**：`.github/workflows/build.yml`，push main 构建双端 artifact；
+  `v*` tag 发布安装包 + `hot-win` 热更新资产。
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。

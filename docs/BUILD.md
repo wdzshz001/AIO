@@ -134,6 +134,16 @@ apps/android/
   gradle.properties                 SDK/代理/路径检查
 ```
 
+### 签名
+
+`apps/android/app/build.gradle` 的 `signingConfigs.aggDebug` 固定使用
+`apps/android/debug.keystore`：
+
+- alias: `androiddebugkey`
+- store/key password: `android`
+- 本地和 CI 同证书，APK 可互相覆盖安装
+- 这是自用 debug 证书，不用于商店分发；要正式签名时替换成 CI secrets keystore
+
 ### Android 坑（下次直接照做）
 
 1. **workspace 路径含中文**：AGP 会拒绝，`apps/android/gradle.properties` 必须有
