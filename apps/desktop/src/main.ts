@@ -146,6 +146,8 @@ function readHotCurrent(): (HotManifest & { root: string }) | null {
     const current = JSON.parse(fs.readFileSync(path.join(dir, 'current.json'), 'utf8')) as HotManifest;
     const root = path.join(dir, current.version.replace(/[^\w.-]/g, '_'));
     if (!current.version || !current.files || !fs.existsSync(path.join(root, 'index.html'))) return null;
+    // 重装/升级 EXE 后，旧热更新不能覆盖更新的壳
+    if (!versionGreater(current.version, app.getVersion())) return null;
     for (const name of HOT_FILES) {
       const file = path.join(root, name);
       const expected = current.files[name];
@@ -960,6 +962,7 @@ function registerIpc(): void {
 
   ipcMain.handle('agg:app-info', () => ({
     version: app.getVersion(),
+    hotVersion: readHotCurrent()?.version,
     electron: process.versions.electron,
     chrome: process.versions.chrome,
     platform: process.platform,

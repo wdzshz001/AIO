@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BangumiEpisode, BangumiSubject, SourceCandidate, SourceLookup } from '@agg/adapters';
 import {
   episodeLabel,
@@ -21,6 +21,8 @@ interface Props {
   onPlay: (candidate: SourceCandidate, episode: BangumiEpisode, subject: BangumiSubject) => void;
   /** 从播放页返回时自动打开该集的选源面板 */
   autoEpisodeSort?: string;
+  /** 设置里的动画首选源；有就优先等它，超时后仍用最先返回的源 */
+  defaultPreferredSource?: string;
 }
 
 function episodeCode(ep: BangumiEpisode): string {
@@ -59,6 +61,7 @@ export default function SubjectPage({
   onBack,
   onPlay,
   autoEpisodeSort,
+  defaultPreferredSource,
 }: Props) {
   const [subject, setSubject] = useState<BangumiSubject | null>(null);
   const [episodes, setEpisodes] = useState<BangumiEpisode[]>([]);
@@ -75,6 +78,7 @@ export default function SubjectPage({
   const [pickerRunning, setPickerRunning] = useState(false);
   const [verified, setVerified] = useState<Record<string, boolean>>({});
   const [preferred, setPreferred] = useState<Record<string, string>>(() => loadPreferredSources());
+  const playSeq = useRef(0);
 
   const animeSites = useMemo(
     () => sites.filter((s) => s.kind === 'anime' && !!s.search && !!s.detail),
@@ -187,11 +191,15 @@ export default function SubjectPage({
     [animeSites, ctxFor, subject],
   );
 
-  /** 选集后自动匹配并选第一个可用源，直接进播放页（对齐 ani 的“点了就看”） */
+  /**
+   * 选集后自动匹配并进入播放页：不等所有源都返回。
+   * - 没有首选源：第一个 ok 的源直接播
+   * - 有首选源：最多等 900ms 首选源，超时就用最先返回的可用源
+   */
   const playEpisode = useCallback(
     async (episode: BangumiEpisode) => {
       if (!subject) return;
-      setPickerEpisode(episode);
+      const seq = ++playSeq.current;
       setPickerEpisode(episode);
       setPickerError('');
       setPickerRunning(true);
@@ -200,34 +208,81 @@ export default function SubjectPage({
         initial[s.id] = { siteId: s.id, siteName: s.name, status: 'pending' };
       }
       setLookups(initial);
-      try {
-        const result = await findEpisodeSources(
-          ctxFor,
-          animeSites,
-          subject,
-          episode,
-          (lookup) => setLookups((prev) => ({ ...prev, [lookup.siteId]: lookup })),
-        );
-        setLookups(Object.fromEntries(result.map((l) => [l.siteId, l])));
-        const rank = rankLookups(result, animeSites);
-        const pid = preferred[String(subject.id)];
-        const best = (pid ? rank.find((l) => l.siteId === pid) : undefined) ?? rank[0];
-        if (best?.candidate) {
-          savePreferredSource(subject.id, best.candidate.siteId);
-          setPreferred(loadPreferredSources());
-          setPickerEpisode(null);
-          setLookups({});
-          setPickerRunning(false);
-          setPickerError('');
-          onPlay(best.candidate, episode, subject);
+
+      const preferredSite = defaultPreferredSource || preferred[String(subject.id)] || '';
+      let settled = false;
+      let stopped = false;
+      let firstCandidate: SourceCandidate | null = null;
+      let graceTimer: ReturnType<typeof setTimeout> | undefined;
+      let resolvePick!: (candidate: SourceCandidate | null) => void;
+      const picked = new Promise<SourceCandidate | null>((resolve) => {
+        resolvePick = resolve;
+      });
+
+      const finish = (candidate: SourceCandidate | null) => {
+        if (settled) return;
+        settled = true;
+        stopped = true;
+        clearTimeout(graceTimer);
+        resolvePick(candidate);
+      };
+
+      const consider = (lookup: SourceLookup) => {
+        if (settled || seq !== playSeq.current || !lookup.candidate) return;
+        if (!preferredSite || lookup.siteId === preferredSite) {
+          finish(lookup.candidate);
           return;
         }
-      } catch (e) {
-        setPickerError(e instanceof Error ? e.message : String(e));
+        // 非首选源先返回：再给首选源 900ms，等不到就直接用这个
+        if (!firstCandidate) {
+          firstCandidate = lookup.candidate;
+          graceTimer = setTimeout(() => finish(firstCandidate), 900);
+        }
+      };
+
+      const task = findEpisodeSources(
+        ctxFor,
+        animeSites,
+        subject,
+        episode,
+        (lookup) => {
+          if (settled || seq !== playSeq.current) return;
+          setLookups((prev) => ({ ...prev, [lookup.siteId]: lookup }));
+          consider(lookup);
+        },
+        { shouldStop: () => stopped, concurrency: animeSites.length, timeoutMs: 8_000 },
+      );
+
+      void task
+        .then((result) => {
+          if (settled || seq !== playSeq.current) return;
+          const rank = rankLookups(result, animeSites);
+          const byPreferred = preferredSite
+            ? rank.find((l) => l.siteId === preferredSite)?.candidate
+            : undefined;
+          finish(firstCandidate ?? byPreferred ?? rank[0]?.candidate ?? null);
+        })
+        .catch((e: unknown) => {
+          if (settled || seq !== playSeq.current) return;
+          setPickerError(e instanceof Error ? e.message : String(e));
+          finish(firstCandidate);
+        });
+
+      const candidate = await picked;
+      if (seq !== playSeq.current) return;
+      if (!candidate) {
+        setPickerRunning(false);
+        return;
       }
+      savePreferredSource(subject.id, candidate.siteId);
+      setPreferred(loadPreferredSources());
+      setPickerEpisode(null);
+      setLookups({});
       setPickerRunning(false);
+      setPickerError('');
+      onPlay(candidate, episode, subject);
     },
-    [animeSites, ctxFor, onPlay, preferred, subject],
+    [animeSites, ctxFor, defaultPreferredSource, onPlay, preferred, subject],
   );
 
   /** 从播放页返回时自动打开当前集的选源面板 */
@@ -260,11 +315,11 @@ export default function SubjectPage({
 
   const ranked = useMemo(() => {
     const list = rankLookups(Object.values(lookups), animeSites);
-    const pid = preferred[String(subjectId)];
+    const pid = defaultPreferredSource || preferred[String(subjectId)];
     if (!pid) return list;
     // 上次为该条目选的源排第一（对齐 ani 的选源偏好记忆）
     return [...list].sort((a, b) => (a.siteId === pid ? -1 : 0) - (b.siteId === pid ? -1 : 0));
-  }, [lookups, animeSites, preferred, subjectId]);
+  }, [lookups, animeSites, preferred, subjectId, defaultPreferredSource]);
   const pending = useMemo(
     () => Object.values(lookups).filter((l) => l.status === 'pending'),
     [lookups],

@@ -176,6 +176,8 @@ export interface HostBridge {
 
 export interface AppInfo {
   version: string;
+  /** 已应用的 Windows Web Bundle 版本；没有热更新时为空 */
+  hotVersion?: string;
   electron: string;
   chrome: string;
   platform: string;

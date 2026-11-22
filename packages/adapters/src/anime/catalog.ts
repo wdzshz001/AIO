@@ -263,7 +263,7 @@ export async function findEpisodeSources(
   subject: BangumiSubject,
   episode: BangumiEpisode,
   onUpdate?: (lookup: SourceLookup) => void,
-  opts: { concurrency?: number } = {},
+  opts: { concurrency?: number; timeoutMs?: number; shouldStop?: () => boolean } = {},
 ): Promise<SourceLookup[]> {
   const candidates = sites.filter((s) => s.kind === 'anime' && !!s.search && !!s.detail);
   const results: SourceLookup[] = candidates.map((s) => ({
@@ -274,7 +274,7 @@ export async function findEpisodeSources(
 
   let cursor = 0;
   const worker = async (): Promise<void> => {
-    while (cursor < candidates.length) {
+    while (cursor < candidates.length && !opts.shouldStop?.()) {
       const i = cursor++;
       const site = candidates[i];
       const started = Date.now();
@@ -288,7 +288,7 @@ export async function findEpisodeSources(
         try {
           const candidate = await withTimeout(
             resolveEpisodeOnSite(site, ctx, subject, episode),
-            60_000,
+            opts.timeoutMs ?? 60_000,
             `${site.name} 查找超时`,
           );
           lookup = candidate
@@ -317,7 +317,6 @@ export async function findEpisodeSources(
       onUpdate?.(lookup);
     }
   };
-
   const n = Math.max(1, Math.min(opts.concurrency ?? runtime.searchConcurrency, candidates.length));
   await Promise.all(Array.from({ length: n }, worker));
   return results;

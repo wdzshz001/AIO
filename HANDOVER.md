@@ -22,6 +22,8 @@
 - **动画**：按 animeko 模型重构。首页是 Bangumi 热度榜 / 本季推荐 / 新番时间表；
   搜索匹配条目 → 条目页看标准剧集 → 选集后自动按偏好/线路质量选源并进入播放页，
   视频自动播放；没有候选时才退回手动选源面板。
+- 选集不再等全部源：第一个可用源就播；设置→阅读与播放→动画播放可指定默认优先源，
+  最多等首选源 900ms，避免卡住的线路拖住播放。
 - **漫画**：CloudWN 漫画 + MYCOMIC + 拷贝漫画。首页是最新/排行/全部；一个图集=一部作品，
   阅读器显示竖排长图；图片统一走 aggmedia 代理补 Referer/UA。
   拷贝漫画默认标记为普通（非 NSFW）；CloudWN/MYCOMIC 仍为 NSFW。
@@ -42,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.1.0-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.1.4-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -60,7 +62,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.1.0-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.1.4-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

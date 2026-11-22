@@ -2,6 +2,7 @@
 
 一个把多个网页站点收进同一个入口的阅读启动器。首页是「继续阅读 + 应用入口 + 最近记录」，打开后是统一的列表 / 详情 / 阅读界面——不打开浏览器，也不看各站自己的广告和排版。
 动画应用按 animeko 的模型工作：搜索匹配 Bangumi 条目，打开条目选集，再按集到 20+ 个数据源里选源播放。
+有可用源就播放，不再等待全部源返回；可在设置里指定默认优先源。
 漫画应用把 CloudWN、MYCOMIC 与拷贝漫画三个源聚合到同一个阅读器里。
 
 > 项目当前进度、已知问题、待办与环境踩坑，见 [HANDOVER.md](HANDOVER.md)。
@@ -23,13 +24,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.1.0-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.1.4-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.1.0-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.1.4-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索；动画网络与视频链路仍需真机验证
 
@@ -43,7 +44,7 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 | 应用 | 聚合的站点 | 能力 |
 |---|---|---|
 | 小说 | 起点（默认书源）、得奇小说网、69书吧、同人小说网 | 起点推荐/分类/排行首页、详情、目录、阅读、书架直达进度、跨站换源 |
-| 动画 | 21 个 animeko 在线源（含 1 个 json-api） | Bangumi 热度/本季推荐/新番时间表、条目搜索、剧集表、按集选源、换源、续播、连播 |
+| 动画 | 21 个 animeko 在线源（含 1 个 json-api） | Bangumi 热度/本季推荐/新番时间表、条目搜索、剧集表、按集自动选源、默认优先源、换源、续播、连播 |
 | 漫画 | CloudWN 漫画、MYCOMIC、拷贝漫画 | 最新/排行首页、搜索、详情、全部图片竖排阅读、图片代理 |
 
 站点按 `kind` 归属应用（`apps` 注册表），加站点只要实现 `Site` 并在 `sites` 里注册一行，UI 不用改；
@@ -95,7 +96,7 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
   **NSFW 标记**三级页，逐源标记；CloudWN / MYCOMIC 默认标记，拷贝漫画默认普通。
 - **内容源**：逐源启用/禁用、上下排序、分类首选源、单源健康检查、验证、清 Cookie。
 - **阅读与播放**：小说字号/行距/段距/正文宽度/主题；漫画铺满或完整显示；
-  动画自动连播、倍速、静音、默认清晰度。
+  动画自动连播、默认优先源、倍速、静音、默认清晰度。
 - **外观**：深色 / 浅色 / 跟随系统、强调色、紧凑/舒适、减少动画。
 - **启动与搜索**：首页/上次页面/指定应用启动、开机启动、最小化到托盘、默认搜索分类。
 - **存储与隐私**：localStorage 占用、清理章节缓存/最近记录/Cookie、无痕模式、模糊最近封面、

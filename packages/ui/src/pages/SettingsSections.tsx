@@ -308,7 +308,7 @@ function SourceManager({ onBack, ctxFor }: SectionProps) {
             desc={`${group.sites.length} 个源${kind ? ' · 可设置首选源' : ''}`}
           >
             {kind && (
-              <Field label="首选源" desc="搜索/选源时优先展示">
+              <Field label="首选源" desc="搜索/自动选源时优先展示；自动选源最多等它 900ms">
                 <select
                   className="select"
                   value={pref ?? ''}
@@ -413,8 +413,12 @@ function SourceManager({ onBack, ctxFor }: SectionProps) {
 /* ------------------------------------------------------------------ */
 
 function ReaderSettings({ onBack }: SectionProps) {
-  const { settings, updateSettings } = useSites();
+  const { allSites, settings, updateSettings } = useSites();
   const [prefs, setPrefs] = useState<ReaderPrefs>(() => loadPrefs());
+  const animeSources = useMemo(
+    () => allSites.filter((s) => s.kind === 'anime' && !!s.search && !!s.detail),
+    [allSites],
+  );
 
   const patchPrefs = (patch: Partial<ReaderPrefs>) => {
     setPrefs((prev) => {
@@ -466,6 +470,27 @@ function ReaderSettings({ onBack }: SectionProps) {
       </Card>
 
       <Card title="动画播放">
+        <Field label="默认优先源" desc="自动选源时优先等它；最多等 900ms，超时改用最先返回的可用源">
+          <select
+            className="select"
+            value={settings.preferredSource.anime ?? ''}
+            onChange={(e) =>
+              updateSettings({
+                preferredSource: {
+                  ...settings.preferredSource,
+                  anime: e.target.value || undefined,
+                },
+              })
+            }
+          >
+            <option value="">自动（谁先返回用谁）</option>
+            {animeSources.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="自动连播" desc="播完自动下一集">
           <Toggle
             checked={prefs.autoNext}
@@ -850,7 +875,7 @@ function NetworkSettings({ onBack }: SectionProps) {
 
 function AboutSettings({ onBack }: SectionProps) {
   const { allSites, sites, settings, subscriptionUpdatedAt, error } = useSites();
-  const [info, setInfo] = useState<{ version?: string; electron?: string; chrome?: string; platform?: string }>({});
+  const [info, setInfo] = useState<{ version?: string; hotVersion?: string; electron?: string; chrome?: string; platform?: string }>({});
   const [copied, setCopied] = useState(false);
   const [updateMsg, setUpdateMsg] = useState('');
   const [hotBusy, setHotBusy] = useState(false);
@@ -912,7 +937,12 @@ function AboutSettings({ onBack }: SectionProps) {
     <Shell title="关于" desc="版本与运行信息" onBack={onBack}>
       <Card title="应用">
         <Field label="版本">
-          <span className="mono small">{info.version ?? 'dev'}</span>
+          <span className="mono small">
+            {info.version ?? 'dev'}
+            {info.hotVersion && info.hotVersion !== info.version
+              ? `（前端 ${info.hotVersion}）`
+              : ''}
+          </span>
         </Field>
         <Field label="运行环境">
           <span className="mono small">

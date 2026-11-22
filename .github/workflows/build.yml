@@ -38,11 +38,13 @@ jobs:
       - name: Rename artifact
         shell: pwsh
         run: |
-          Copy-Item "release/聚合阅读-0.1.0-portable.exe" "release/agg-reader-0.1.0-portable.exe"
+          $exe = Get-ChildItem "release/*-portable.exe" | Select-Object -First 1
+          if (-not $exe) { throw "portable exe not found" }
+          Copy-Item $exe.FullName "release/agg-reader-portable.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-portable
-          path: release/agg-reader-0.1.0-portable.exe
+          path: release/agg-reader-portable.exe
           if-no-files-found: error
 
   android:
@@ -76,11 +78,11 @@ jobs:
       - name: Copy artifact
         run: |
           mkdir -p release
-          cp apps/android/app/build/outputs/apk/debug/app-debug.apk release/agg-reader-0.1.0-android.apk
+          cp apps/android/app/build/outputs/apk/debug/app-debug.apk release/agg-reader-android.apk
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: release/agg-reader-0.1.0-android.apk
+          path: release/agg-reader-android.apk
           if-no-files-found: error
 
   hot:
@@ -117,8 +119,8 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/agg-reader-0.1.0-portable.exe
-            release/agg-reader-0.1.0-android.apk
+            release/agg-reader-portable.exe
+            release/agg-reader-android.apk
             release/hot-win.json
             release/hot-win-index.html
             release/hot-win-renderer.js

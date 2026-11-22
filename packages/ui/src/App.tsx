@@ -607,6 +607,7 @@ export default function App() {
             ctxFor={ctxFor}
             shelf={shelf}
             autoEpisodeSort={route.autoEpisodeSort}
+            defaultPreferredSource={settings.preferredSource?.anime}
             onBack={back}
             onPlay={(candidate: SourceCandidate, episode: BangumiEpisode, subject: BangumiSubject) => {
               push({

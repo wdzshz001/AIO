@@ -110,6 +110,7 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 - 启动：静默检查；发现新版本只弹顶部 Toast，**不自动下载**。
 - 用户：设置 → 关于 → 检查更新，手动下载并应用。
 - 应用后 reload；失败保留旧版本。
+- 版本显示：设置 → 关于 显示「壳版本（前端 hotVersion）」；重装更高版本 EXE 后会忽略旧热更新。
 - 不做自动强制重启。
 
 ---
@@ -130,7 +131,7 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 应用不直接连 Git，而是连 **CI 发布出来的静态资产**：
 
 ```text
-git push tag v0.1.2
+git push tag v0.1.4
   -> GitHub Actions
     -> 构建 EXE/APK
     -> 构建 hot-win.*
@@ -150,7 +151,7 @@ git push tag v0.1.2
 
 - Actions：`https://github.com/wdzshz001/AIO/actions`
 - Release：`https://github.com/wdzshz001/AIO/releases`
-- `v0.1.1` / `v0.1.2` / `v0.1.3` 已成功跑完双端 + hot + release
+- `v0.1.1` / `v0.1.2` / `v0.1.3` / `v0.1.4` 已成功跑完双端 + hot + release
 - `v0.1.2` 的 `hot-win.json` 可被客户端读取，实测检查/应用成功
 - Android debug 签名已固定为 `apps/android/debug.keystore`，本地/CI 可覆盖安装
 

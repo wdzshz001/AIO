@@ -57,6 +57,7 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
     ).catch(() => null);
     note(`${prefix} episodes: ` + JSON.stringify(epInfo));
 
+    const autoStarted = Date.now();
     await clickFirst('.episode-item');
     // 新逻辑会先自动选源：等「播放器出现」或「选源面板结束 pending」
     let autoPicked = false;
@@ -76,7 +77,7 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       if (st?.modal && !st.pending) break;
       await wait(500);
     }
-    note(`${prefix} auto source: ` + autoPicked);
+    note(`${prefix} auto source: ${autoPicked} in ${Date.now() - autoStarted}ms`);
     if (autoPicked) {
       await shot(`${prefix}-auto`);
     } else {
@@ -298,6 +299,8 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
         note('hot apply: ' + JSON.stringify(applied));
       }
       await wait(2500);
+      const hotInfo = await js(`window.agg.appInfo().catch((e) => ({ error: String(e) }))`);
+      note('hot appinfo: ' + JSON.stringify(hotInfo));
       await shot('hot-result');
       note('HOT DONE');
       return;
