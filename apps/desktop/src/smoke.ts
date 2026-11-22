@@ -308,6 +308,33 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       return;
     }
 
+    if (process.env.AGG_SMOKE_SEARCH_HISTORY === '1') {
+      await js(`localStorage.removeItem('agg.searchHistory.v1')`);
+      await js(`(() => {
+        const input = document.querySelector('.launcher-search input');
+        const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+        set.call(input, '测试历史');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        document.querySelector('.launcher-search .primary-btn')?.click();
+        return true;
+      })()`);
+      await until(`!!document.querySelector('.search-head')`, 20_000, 'history-search');
+      await js(`document.querySelector('.search-head .icon-btn')?.click()`);
+      await until(`!!document.querySelector('.launcher')`, 20_000, 'history-home');
+      await wait(400);
+      await js(`document.querySelector('.launcher-search input')?.focus()`);
+      await wait(300);
+      const before = await js(`({ count: document.querySelectorAll('.search-history-item').length, text: document.querySelector('.search-history')?.innerText || '' })`);
+      note('search history before clear: ' + JSON.stringify(before));
+      await shot('search-history');
+      await js(`document.querySelector('.search-history-head button')?.click()`);
+      await wait(300);
+      const after = await js(`document.querySelectorAll('.search-history-item').length`);
+      note('search history after clear: ' + after);
+      note('SEARCH HISTORY DONE');
+      return;
+    }
+
     if (process.env.AGG_SMOKE_AUTOQI === '1') {
       await js(`document.querySelectorAll('.app-card')[0].click()`);
       await until(`document.querySelectorAll('.book-card').length > 0`, 60_000, 'autoqi-home');
