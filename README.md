@@ -32,7 +32,7 @@ Android：
 
 - 产物 `release/agg-reader-0.1.4-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
-- 当前已验证首页、小说/漫画、搜索；动画网络与视频链路仍需真机验证
+- 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
 GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构建；`v*` tag 创建 Release
 并附带 Windows 热更新 bundle。热更新方案见 [docs/HOT-UPDATE.md](docs/HOT-UPDATE.md)。
