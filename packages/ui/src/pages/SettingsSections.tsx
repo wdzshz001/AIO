@@ -977,9 +977,11 @@ function AboutSettings({ onBack }: SectionProps) {
       <Card title="应用">
         <Field label="版本">
           <span className="mono small">
-            {info.version ?? 'dev'}
             {info.hotVersion && info.hotVersion !== info.version
-              ? `（前端 ${info.hotVersion}）`
+              ? info.hotVersion
+              : (info.version ?? 'dev')}
+            {info.hotVersion && info.hotVersion !== info.version
+              ? `（壳 ${info.version ?? 'dev'}）`
               : ''}
           </span>
         </Field>

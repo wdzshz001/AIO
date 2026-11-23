@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.2.3-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.2.4-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -58,8 +58,12 @@
 - **本地缓存/预加载**：`packages/ui/src/contentCache.ts` 用 IndexedDB 持久化
   小说正文/漫画章节（12h、最多 80 条、可清理）；`preload.ts` 预取漫画附近页；
   Reader 预取下一章/下一集页面。图片/HLS 分片由代理层加 Cache-Control。
-- **阅读全屏**：点击阅读器中心区域切换隐藏/显示工具栏；Android 动画横屏全屏。
-  阅读器 `z-index:1000`，底层页面 `visibility:hidden`，避免标题栏重影。
+- **阅读全屏**：小说/漫画点击阅读器中心切换工具栏；漫画默认全屏。
+- **Android 动画全屏**：默认不横屏；点「全屏播放」按钮后调用原生
+  `setVideoFullscreen(true)` 横屏，退出恢复。全屏控制层默认隐藏，点击视频/空白
+  唤出上一集、下一集、退出按钮 3 秒。
+- **Windows 热更新版本**：About 版本号优先显示 `hotVersion`，壳版本放括号内，
+  热更新后数字会实际变化。
 - **分批加载/返回不刷新**：动画源每批 6 个；阅读器覆盖层保留底层详情页，
   返回不丢滚动/数据；Android 返回键可退出全屏阅读。
 - **CloudWN 合集**：详情解析 `a[data-chid]` 多话目录，章节转成单话 album URL；
@@ -82,7 +86,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.2.3-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.2.4-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

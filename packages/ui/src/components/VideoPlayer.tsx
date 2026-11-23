@@ -77,20 +77,6 @@ export default function VideoPlayer({
   const isAndroid =
     (globalThis as { agg?: { platform?: string } }).agg?.platform === 'android';
 
-  // Android：进入视频页默认横屏全屏，离开时恢复
-  useEffect(() => {
-    const agg = (globalThis as {
-      agg?: { platform?: string; setVideoFullscreen?: (on: boolean) => unknown };
-    }).agg;
-    if (agg?.platform === 'android' && typeof agg.setVideoFullscreen === 'function') {
-      void agg.setVideoFullscreen(true);
-      return () => {
-        void agg.setVideoFullscreen?.(false);
-      };
-    }
-    return undefined;
-  }, []);
-
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
@@ -193,6 +179,7 @@ export default function VideoPlayer({
       ref={ref}
       className="player"
       controls
+      controlsList="nofullscreen"
       playsInline
       autoPlay={autoPlay}
       poster={poster}

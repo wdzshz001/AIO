@@ -81,6 +81,8 @@ export default function Reader({
   const [error, setError] = useState('');
   const [prefs, setPrefs] = useState<ReaderPrefs>(() => loadPrefs());
   const [fullscreen, setFullscreen] = useState(site.kind === 'comic');
+  const [videoUiVisible, setVideoUiVisible] = useState(false);
+  const videoUiTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [playError, setPlayError] = useState('');
@@ -108,10 +110,21 @@ export default function Reader({
 
   const isAndroid =
     (globalThis as { agg?: { platform?: string } }).agg?.platform === 'android';
+
+  const showVideoUi = (ms = 3200) => {
+    setVideoUiVisible(true);
+    clearTimeout(videoUiTimer.current);
+    videoUiTimer.current = setTimeout(() => setVideoUiVisible(false), ms);
+  };
+
+  // 离开阅读器时恢复竖屏/系统方向
   useEffect(() => {
-    // Android 动画视频默认横屏全屏；桌面端保留标题栏
-    if (isAndroid && content?.video) setFullscreen(true);
-  }, [content?.video, isAndroid]);
+    return () => {
+      clearTimeout(videoUiTimer.current);
+      void bridge.setVideoFullscreen?.(false);
+      void bridge.setImmersive?.(false);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -365,11 +378,34 @@ export default function Reader({
     if (prefs.autoNext && index < chapters.length - 1) setCountdown(5);
   };
 
-  /** 点击正文/漫画中心区域：隐藏或显示顶栏和底部导航 */
+  const enterVideoFullscreen = () => {
+    setFullscreen(true);
+    setVideoUiVisible(false);
+    if (isAndroid) void bridge.setVideoFullscreen?.(true);
+  };
+
+  const exitVideoFullscreen = () => {
+    setFullscreen(false);
+    setVideoUiVisible(false);
+    clearTimeout(videoUiTimer.current);
+    if (isAndroid) void bridge.setVideoFullscreen?.(false);
+  };
+
+  /** 点击正文/漫画中心区域切换工具栏；全屏视频中点击中心短暂唤出上下集按钮 */
   const toggleFullscreen = (e: MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, select, textarea, video, .player')) return;
+    if (target.closest('button, a, input, select, textarea, .video-fs-controls')) return;
     if (window.getSelection()?.toString()) return;
+    if (content?.video) {
+      if (fullscreen) {
+        // 全屏视频：点视频/空白都只唤出控制层，不退出全屏
+        showVideoUi();
+        return;
+      }
+      if (target.closest('video, .player')) return;
+      enterVideoFullscreen();
+      return;
+    }
     setFullscreen((v) => !v);
   };
 
@@ -386,6 +422,11 @@ export default function Reader({
           </div>
           {site.kind === 'comic' && (
             <button className="icon-btn" onClick={() => setFullscreen(true)} title="全屏阅读">
+              全屏
+            </button>
+          )}
+          {content?.video && !fullscreen && (
+            <button className="icon-btn" onClick={enterVideoFullscreen} title="全屏播放">
               全屏
             </button>
           )}
@@ -407,6 +448,38 @@ export default function Reader({
 
       {fullscreen && (
         <div className="reader-focus-hint">点击中间显示/隐藏工具栏</div>
+      )}
+
+      {fullscreen && content?.video && (
+        <div className={'video-fs-controls' + (videoUiVisible ? ' show' : '')}>
+          <button
+            disabled={index <= 0}
+            onClick={() => {
+              setCountdown(null);
+              onNavigate(index - 1);
+              showVideoUi();
+            }}
+          >
+            上一集
+          </button>
+          <div className="video-fs-meta">
+            <span>{title}</span>
+            <span>{prettyTitle(chapter?.title ?? '')}</span>
+          </div>
+          <button
+            disabled={index >= chapters.length - 1}
+            onClick={() => {
+              setCountdown(null);
+              onNavigate(index + 1);
+              showVideoUi();
+            }}
+          >
+            下一集
+          </button>
+          <button className="video-fs-exit" onClick={exitVideoFullscreen}>
+            退出全屏
+          </button>
+        </div>
       )}
 
       {settingsOpen && (

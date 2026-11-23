@@ -110,6 +110,22 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
     const hasVideo = await js(`!!document.querySelector('.player')`).catch(() => false);
     note(`${prefix} video player: ` + hasVideo);
     if (hasVideo) {
+      const fsClicked = await js(
+        `(() => { const b = [...document.querySelectorAll('.reader-head button')].find((x) => x.textContent.trim() === '全屏'); if (!b) return false; b.click(); return true; })()`,
+      ).catch(() => false);
+      await js(`document.querySelector('.reader-scroll')?.click()`);
+      await wait(500);
+      const fsState = await js(
+        `(() => ({
+          fullscreen: !!document.querySelector('.reader.focus'),
+          controls: !!document.querySelector('.video-fs-controls.show'),
+          buttons: [...document.querySelectorAll('.video-fs-controls button')].map((x) => x.textContent.trim()),
+        }))()`,
+      ).catch(() => null);
+      note(`${prefix} video fullscreen: ` + JSON.stringify({ fsClicked, fsState }));
+      if (fsClicked) await shot(`${prefix}-fullscreen`);
+      await js(`document.querySelector('.video-fs-exit')?.click()`);
+      await wait(300);
       await js(
         `(() => { const v = document.querySelector('.player'); v.muted = true; v.play().catch(() => {}); return 'ok'; })()`,
       ).catch(() => undefined);

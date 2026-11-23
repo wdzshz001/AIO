@@ -104,6 +104,8 @@ public class MainActivity extends Activity {
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 webView.setVisibility(View.GONE);
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                setAppImmersive(true);
             }
 
             @Override
@@ -117,6 +119,8 @@ public class MainActivity extends Activity {
                 }
                 webView.setVisibility(View.VISIBLE);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+                setAppImmersive(false);
             }
         });
 
@@ -234,6 +238,8 @@ public class MainActivity extends Activity {
             root.removeView(customView);
             customView = null;
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            setAppImmersive(false);
             return;
         }
         webView.evaluateJavascript(
