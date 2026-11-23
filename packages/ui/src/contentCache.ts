@@ -55,6 +55,35 @@ export function contentCacheKey(siteId: string, url: string): string {
   return `${siteId}|${url}`;
 }
 
+/**
+ * Android 的图片代理地址带 127.0.0.1 随机端口；缓存内容隔天/升级后旧端口失效。
+ * 从缓存读出时把 u/r 参数重新换成当前端口的代理地址。
+ */
+function refreshCachedContent(content: ChapterContent): ChapterContent {
+  const agg = (globalThis as {
+    agg?: { platform?: string; proxyUrl?: (u: string, r: string) => string };
+  }).agg;
+  if (agg?.platform !== 'android' || typeof agg.proxyUrl !== 'function' || !content.images?.length) {
+    return content;
+  }
+  let changed = false;
+  const images = content.images.map((src) => {
+    try {
+      const u = new URL(src);
+      if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return src;
+      const raw = u.searchParams.get('u');
+      if (!raw) return src;
+      const referer = u.searchParams.get('r') ?? '';
+      const next = agg.proxyUrl?.(raw, referer) || raw;
+      if (next !== src) changed = true;
+      return next;
+    } catch {
+      return src;
+    }
+  });
+  return changed ? { ...content, images } : content;
+}
+
 /** 视频页短缓存：预取下一集后，自动连播无需重新解析页面 */
 export function readMediaCache(key: string): ChapterContent | null {
   const hit = mediaMemory.get(key);
@@ -79,7 +108,9 @@ export function readContentCache(key: string): ChapterContent | null {
     memory.delete(key);
     return null;
   }
-  return hit.content;
+  const content = refreshCachedContent(hit.content);
+  if (content !== hit.content) memory.set(key, { at: hit.at, content });
+  return content;
 }
 
 export async function getContentCache(key: string): Promise<ChapterContent | null> {
@@ -97,8 +128,9 @@ export async function getContentCache(key: string): Promise<ChapterContent | nul
     }
   });
   if (!record || !record.content || Date.now() - record.at > TTL_MS) return null;
-  memory.set(key, { at: record.at, content: record.content });
-  return record.content;
+  const content = refreshCachedContent(record.content);
+  memory.set(key, { at: record.at, content });
+  return content;
 }
 
 export async function putContentCache(key: string, content: ChapterContent): Promise<void> {

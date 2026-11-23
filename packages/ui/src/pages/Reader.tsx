@@ -435,19 +435,36 @@ export default function Reader({
   };
   const enterVideoFullscreen = () => {
     setFullscreen(true);
-    setVideoUiVisible(false);
     if (isAndroid) void bridge.setVideoFullscreen?.(true);
+    // 进入全屏先露出控制层几秒，避免用户找不到上下集/退出
+    showVideoUi(4000);
   };
   enterVideoFullscreenRef.current = enterVideoFullscreen;
 
-  // Android 原生播放器全屏按钮：转成自定义全屏，才能显示上下集和退出按钮
+  const exitVideoFullscreenRef = useRef<() => void>(() => undefined);
+  exitVideoFullscreenRef.current = () => {
+    setFullscreen(false);
+    setVideoUiVisible(false);
+    clearTimeout(videoUiTimer.current);
+    if (isAndroid) void bridge.setVideoFullscreen?.(false);
+  };
+
+  // Android 原生全屏按钮：转成应用内全屏切换；再按一次直接退出
   useEffect(() => {
-    const w = window as unknown as { __aggEnterVideoFullscreen?: () => void };
+    const w = window as unknown as {
+      __aggEnterVideoFullscreen?: () => void;
+      __aggToggleVideoFullscreen?: () => void;
+    };
     w.__aggEnterVideoFullscreen = () => enterVideoFullscreenRef.current();
+    w.__aggToggleVideoFullscreen = () => {
+      if (fullscreen) exitVideoFullscreenRef.current();
+      else enterVideoFullscreenRef.current();
+    };
     return () => {
       delete w.__aggEnterVideoFullscreen;
+      delete w.__aggToggleVideoFullscreen;
     };
-  }, []);
+  }, [fullscreen]);
 
   const exitVideoFullscreen = () => {
     setFullscreen(false);
@@ -455,7 +472,6 @@ export default function Reader({
     clearTimeout(videoUiTimer.current);
     if (isAndroid) void bridge.setVideoFullscreen?.(false);
   };
-
   /** 点击正文/漫画中心区域切换工具栏；全屏视频中点击中心短暂唤出上下集按钮 */
   const toggleFullscreen = (e: MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -523,6 +539,12 @@ export default function Reader({
 
       {fullscreen && (
         <div className="reader-focus-hint">点击中间显示/隐藏工具栏</div>
+      )}
+
+      {fullscreen && content?.video && (
+        <button className="video-fs-close" onClick={exitVideoFullscreen} title="退出全屏" aria-label="退出全屏">
+          ×
+        </button>
       )}
 
       {fullscreen && content?.video && (

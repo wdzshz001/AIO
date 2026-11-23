@@ -100,13 +100,13 @@ public class MainActivity extends Activity {
                 }
                 // 原生播放器全屏按钮：优先转成应用内全屏控制层（带上一集/下一集）
                 webView.evaluateJavascript(
-                        "(typeof window.__aggEnterVideoFullscreen === 'function')",
+                        "(typeof window.__aggToggleVideoFullscreen === 'function')",
                         value -> {
                             if ("true".equals(value)) {
                                 callback.onCustomViewHidden();
                                 webView.postDelayed(
                                         () -> webView.evaluateJavascript(
-                                                "window.__aggEnterVideoFullscreen&&window.__aggEnterVideoFullscreen()",
+                                                "window.__aggToggleVideoFullscreen&&window.__aggToggleVideoFullscreen()",
                                                 null),
                                         80);
                                 return;

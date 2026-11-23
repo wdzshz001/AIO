@@ -883,6 +883,24 @@ img {
   display: none;
 }
 
+.video-fs-close {
+  position: fixed;
+  right: 18px;
+  top: 16px;
+  z-index: 95;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(10, 12, 18, 0.72);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(10px);
+}
+
 .video-fs-controls {
   position: fixed;
   left: 50%;
