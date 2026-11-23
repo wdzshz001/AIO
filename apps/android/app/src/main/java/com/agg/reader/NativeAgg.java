@@ -51,6 +51,10 @@ public final class NativeAgg {
     private static final String TAG = "AggNative";
     private static final String UPDATE_MANIFEST =
             "https://github.com/wdzshz001/AIO/releases/latest/download/android-latest.json";
+    private static final String UPDATE_API =
+            "https://api.github.com/repos/wdzshz001/AIO/releases/latest";
+    private static final String UPDATE_APK =
+            "https://github.com/wdzshz001/AIO/releases/latest/download/agg-reader-android.apk";
     static final String UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -515,31 +519,81 @@ public final class NativeAgg {
     }
 
     private Object checkAppUpdate() throws Exception {
-        Request req = new Request.Builder()
-                .url(UPDATE_MANIFEST)
-                .header("User-Agent", UA)
-                .header("Accept", "application/json")
-                .build();
         JSONObject out = new JSONObject();
         out.put("current", BuildConfig.VERSION_NAME);
-        try (Response res = http.newCall(req).execute()) {
-            if (!res.isSuccessful()) {
-                out.put("available", false);
-                out.put("error", "HTTP " + res.code());
-                return out;
+        String bestVersion = "";
+        String bestUrl = "";
+        String lastError = "";
+
+        // 1) 静态 manifest 优先（快，且老版本也兼容）。加时间戳绕过 CDN 缓存。
+        try {
+            JSONObject json = fetchJson(UPDATE_MANIFEST + "?t=" + System.currentTimeMillis());
+            bestVersion = normalizeVersion(json.optString("version", ""));
+            bestUrl = json.optString("apkUrl", "");
+        } catch (Exception e) {
+            lastError = e.getMessage() == null ? e.toString() : e.getMessage();
+        }
+
+        // 2) 静态文件被 CDN 缓存 / 发布未同步时，用 GitHub API 兜底
+        try {
+            JSONObject release = fetchJson(UPDATE_API);
+            String apiVersion = normalizeVersion(release.optString("tag_name", ""));
+            String apiUrl = "";
+            JSONArray assets = release.optJSONArray("assets");
+            if (assets != null) {
+                for (int i = 0; i < assets.length(); i++) {
+                    JSONObject asset = assets.optJSONObject(i);
+                    if (asset == null) continue;
+                    String name = asset.optString("name", "");
+                    if (name.endsWith(".apk")) {
+                        apiUrl = asset.optString("browser_download_url", "");
+                        break;
+                    }
+                }
             }
-            ResponseBody body = res.body();
-            JSONObject json = new JSONObject(body == null ? "{}" : body.string());
-            String version = json.optString("version", "");
-            String url = json.optString("apkUrl", "");
-            if (url.isEmpty()) {
-                url = "https://github.com/wdzshz001/AIO/releases/latest/download/agg-reader-android.apk";
+            if (!apiVersion.isEmpty()
+                    && (bestVersion.isEmpty()
+                    || versionValue(apiVersion) > versionValue(bestVersion))) {
+                bestVersion = apiVersion;
+                bestUrl = apiUrl;
             }
-            out.put("version", version);
-            out.put("url", url);
-            out.put("available", versionValue(version) > versionValue(BuildConfig.VERSION_NAME));
+        } catch (Exception e) {
+            if (lastError.isEmpty()) lastError = e.getMessage() == null ? e.toString() : e.getMessage();
+        }
+
+        if (bestUrl.isEmpty()) bestUrl = UPDATE_APK;
+        out.put("version", bestVersion);
+        out.put("url", bestUrl);
+        if (bestVersion.isEmpty()) {
+            out.put("available", false);
+            out.put("error", lastError.isEmpty() ? "未获取到版本信息" : lastError);
             return out;
         }
+        out.put("available", versionValue(bestVersion) > versionValue(BuildConfig.VERSION_NAME));
+        return out;
+    }
+
+    private JSONObject fetchJson(String url) throws Exception {
+        Request req = new Request.Builder()
+                .url(url)
+                .header("User-Agent", UA)
+                .header("Accept", "application/vnd.github+json, application/json")
+                .header("Cache-Control", "no-cache")
+                .build();
+        try (Response res = http.newCall(req).execute()) {
+            ResponseBody body = res.body();
+            String text = body == null ? "" : body.string();
+            if (!res.isSuccessful()) {
+                throw new Exception("HTTP " + res.code() + " " + url);
+            }
+            return new JSONObject(text);
+        }
+    }
+
+    private static String normalizeVersion(String version) {
+        String v = version == null ? "" : version.trim();
+        if (v.startsWith("v") || v.startsWith("V")) v = v.substring(1);
+        return v;
     }
 
     private static int versionValue(String version) {

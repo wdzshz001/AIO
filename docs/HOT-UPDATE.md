@@ -118,10 +118,11 @@ CI 把 `index.html + android-bridge.js + renderer.css + renderer.js` 内联成�
 ## 2. Android：不做热更新，走 APK 下载更新（已实现）
 
 - 设置 → 关于 → 检查更新
-- `NativeAgg.appUpdateCheck` 请求 Release 的 `android-latest.json`
+- `NativeAgg.appUpdateCheck` 优先读取 Release 的 `android-latest.json`（加时间戳绕过 CDN 缓存）；
+  失败或版本落后时用 GitHub Releases API 兜底，避免发布刚完成时仍读到旧版本
 - 版本大于 `BuildConfig.VERSION_NAME` 时，`DownloadManager` 下载
-  `agg-reader-android.apk`
-- 下载完成广播自动打开系统安装器（需要用户允许安装未知来源）
+  `agg-reader-android.apk`；下载文件使用唯一文件名，避免旧残留文件冲突
+- 下载完成广播自动打开系统安装器；不允许安装未知应用时会跳到对应设置页
 - APK 使用固定 debug 签名，本地/CI 可互相覆盖安装
 
 再次强调：Android 原生壳/权限变化仍需新 APK；只有新的 APK 才能继续获得后续更新能力。
@@ -164,7 +165,7 @@ git push tag v0.1.4
 
 - Actions：`https://github.com/wdzshz001/AIO/actions`
 - Release：`https://github.com/wdzshz001/AIO/releases`
-- `v0.1.1` / `v0.1.2` / `v0.1.3` / `v0.1.4` / `v0.1.5` / `v0.1.6` / `v0.1.7` / `v0.1.8` / `v0.1.9` / `v0.1.10` 已成功跑完双端 + hot + release
+- `v0.1.1` / `v0.1.2` / `v0.1.3` / `v0.1.4` / `v0.1.5` / `v0.1.6` / `v0.1.7` / `v0.1.8` / `v0.1.9` / `v0.1.10` / `v0.2.1` 已成功跑完双端 + hot + release
 - `v0.1.2` 的 `hot-win.json` 可被客户端读取，实测检查/应用成功
 - Android debug 签名已固定为 `apps/android/debug.keystore`，本地/CI 可覆盖安装
 

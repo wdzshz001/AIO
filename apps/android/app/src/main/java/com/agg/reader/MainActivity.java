@@ -138,7 +138,21 @@ public class MainActivity extends Activity {
                     Intent install = new Intent(Intent.ACTION_VIEW);
                     install.setDataAndType(uri, APK_MIME);
                     install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(install);
+                    try {
+                        startActivity(install);
+                    } catch (Exception e) {
+                        if (Build.VERSION.SDK_INT >= 26) {
+                            Intent settings = new Intent(
+                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:" + getPackageName()));
+                            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(settings);
+                            Toast.makeText(MainActivity.this,
+                                    "请允许安装未知应用，然后重新点击检查更新", Toast.LENGTH_LONG).show();
+                        } else {
+                            throw e;
+                        }
+                    }
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, "无法打开安装器，请到下载目录手动安装", Toast.LENGTH_LONG).show();
                 }
@@ -155,13 +169,22 @@ public class MainActivity extends Activity {
     /** 下载新版 APK；完成后由 downloadReceiver 自动打开系统安装器 */
     void downloadApk(String url) {
         try {
+            if (downloadManager == null) {
+                downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            }
             DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
             req.setTitle("聚合阅读更新");
             req.setDescription("正在下载最新 APK");
             req.setMimeType(APK_MIME);
+            req.setAllowedOverMetered(true);
+            req.setAllowedOverRoaming(false);
             req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "agg-reader-update.apk");
+            req.setDestinationInExternalFilesDir(
+                    this,
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "agg-reader-update-" + System.currentTimeMillis() + ".apk");
             updateDownloadId = downloadManager.enqueue(req);
+            Toast.makeText(this, "已开始下载，完成后会自动打开安装器", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(this, "下载失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
         }

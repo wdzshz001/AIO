@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.1.10-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.2.1-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -68,16 +68,16 @@
   动画星期、应用页滚动；AppPage 持续监听滚动事件记录位置，返回后恢复。
 - **Android 签名**：`apps/android/debug.keystore` 是自用固定 debug 证书，CI 和本地一致，
   APK 可覆盖安装；不要用于正式分发。
-- **Android 更新**：设置 → 关于 → 检查更新，从 GitHub Release 的
-  `android-latest.json` 检查版本，下载 `agg-reader-android.apk`，
-  完成后自动打开系统安装器；首次需允许安装未知来源。
+- **Android 更新**：设置 → 关于 → 检查更新。静态 `android-latest.json` 加时间戳
+  绕缓存，失败用 GitHub Releases API 兜底；下载用唯一 APK 文件名，完成后自动打开安装器。
+  0.2.1 起修复了旧版本检测/下载的兼容问题。
 - **Android 视频/漫画**：动画视频自动横屏全屏；漫画默认全屏阅读（隐藏顶部标题/底部导航）。
 - **GitHub Actions**：`.github/workflows/build.yml`，push main 构建双端 artifact；
   `v*` tag 发布安装包 + `hot-win` 热更新资产。
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.1.10-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.2.1-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。
