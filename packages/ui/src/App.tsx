@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { BangumiEpisode, BangumiSubject, SourceCandidate } from '@agg/adapters';
 import { episodeLabel } from '@agg/adapters';
 import type { Chapter, SiteCtx } from '@agg/core';
@@ -271,7 +271,6 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (route.name === 'read') return;
       if (e.key === 'Escape') back();
     };
     window.addEventListener('keydown', onKey);
@@ -306,11 +305,13 @@ export default function App() {
     [push],
   );
 
+  let readerNode: ReactNode = null;
   if (route.name === 'read') {
     const site = getSite(route.siteId, sites);
     const ctx = ctxFor(route.siteId);
-    if (!site || !ctx) return <div className="fatal">站点不存在</div>;
-
+    if (!site || !ctx) {
+      readerNode = <div className="fatal">站点不存在</div>;
+    } else {
     const entry = shelf.find((x) =>
       route.subjectId ? x.subjectId === route.subjectId : x.url === route.bookUrl,
     );
@@ -416,7 +417,7 @@ export default function App() {
       return false;
     };
 
-    return (
+    readerNode = (
       <>
         <Reader
           site={site}
@@ -487,12 +488,18 @@ export default function App() {
             : undefined
         }
         />
-        {toastNode}
       </>
     );
+    }
   }
 
-  const activeAppId = 'appId' in route ? route.appId : undefined;
+  // 阅读器是覆盖层：底层页面保持挂载，返回时数据和滚动位置都不会丢
+  const pageRoute: Route =
+    route.name === 'read'
+      ? (stack[stack.length - 2] ?? ({ name: 'home' } as Route))
+      : route;
+
+  const activeAppId = 'appId' in pageRoute ? pageRoute.appId : undefined;
 
   return (
     <div className="app">
@@ -507,7 +514,7 @@ export default function App() {
         </button>
         <div className="rail-apps">
           <button
-            className={'rail-app' + (route.name === 'search' ? ' rail-search-active' : '')}
+            className={'rail-app' + (pageRoute.name === 'search' ? ' rail-search-active' : '')}
             title="聚合搜索"
             onClick={() => push({ name: 'search', query: '', category: settings.searchCategory })}
           >
@@ -529,9 +536,9 @@ export default function App() {
         <button
           className={
             'rail-settings' +
-            (route.name === 'settings' ||
-            route.name === 'settings-nsfw' ||
-            route.name === 'settings-section'
+            (pageRoute.name === 'settings' ||
+            pageRoute.name === 'settings-nsfw' ||
+            pageRoute.name === 'settings-section'
               ? ' active'
               : '')
           }
@@ -544,7 +551,7 @@ export default function App() {
       </aside>
 
       <main className="main">
-        {route.name === 'home' && (
+        {pageRoute.name === 'home' && (
           <Launcher
             apps={apps}
             shelf={visibleShelf}
@@ -555,10 +562,10 @@ export default function App() {
           />
         )}
 
-        {route.name === 'search' && (
+        {pageRoute.name === 'search' && (
           <SearchPage
-            initialQuery={route.query}
-            initialCategory={route.category}
+            initialQuery={pageRoute.query}
+            initialCategory={pageRoute.category}
             ctxFor={ctxFor}
             onOpenBook={(siteId, url) => push({ name: 'book', siteId, url })}
             onOpenSubject={(subjectId) => push({ name: 'subject', subjectId })}
@@ -566,7 +573,7 @@ export default function App() {
           />
         )}
 
-        {route.name === 'settings' && (
+        {pageRoute.name === 'settings' && (
           <SettingsPage
             onBack={back}
             onOpenNsfw={() => push({ name: 'settings-nsfw' })}
@@ -574,15 +581,15 @@ export default function App() {
           />
         )}
 
-        {route.name === 'settings-nsfw' && <NsfwSourcesPage onBack={back} />}
+        {pageRoute.name === 'settings-nsfw' && <NsfwSourcesPage onBack={back} />}
 
-        {route.name === 'settings-section' && (
-          <SettingsSectionPage section={route.section} onBack={back} ctxFor={ctxForAll} />
+        {pageRoute.name === 'settings-section' && (
+          <SettingsSectionPage section={pageRoute.section} onBack={back} ctxFor={ctxForAll} />
         )}
 
-        {route.name === 'app' &&
+        {pageRoute.name === 'app' &&
           (() => {
-            const app = getApp(route.appId);
+            const app = getApp(pageRoute.appId);
             if (!app) return <div className="fatal">应用不存在</div>;
             return (
               <AppPage
@@ -600,13 +607,13 @@ export default function App() {
             );
           })()}
 
-        {route.name === 'subject' && (
+        {pageRoute.name === 'subject' && (
           <SubjectPage
-            subjectId={route.subjectId}
+            subjectId={pageRoute.subjectId}
             sites={sites}
             ctxFor={ctxFor}
             shelf={shelf}
-            autoEpisodeSort={route.autoEpisodeSort}
+            autoEpisodeSort={pageRoute.autoEpisodeSort}
             defaultPreferredSource={settings.preferredSource?.anime}
             onBack={back}
             onPlay={(candidate: SourceCandidate, episode: BangumiEpisode, subject: BangumiSubject) => {
@@ -628,16 +635,16 @@ export default function App() {
           />
         )}
 
-        {route.name === 'book' &&
+        {pageRoute.name === 'book' &&
           (() => {
-            const site = getSite(route.siteId, sites);
-            const ctx = ctxFor(route.siteId);
+            const site = getSite(pageRoute.siteId, sites);
+            const ctx = ctxFor(pageRoute.siteId);
             if (!site || !ctx) return <div className="fatal">站点不存在</div>;
             return (
               <BookPage
                 site={site}
                 ctx={ctx}
-                url={route.url}
+                url={pageRoute.url}
                 sites={sites}
                 ctxFor={ctxFor}
                 onBack={back}
@@ -646,7 +653,7 @@ export default function App() {
                   push({
                     name: 'read',
                     siteId: site.id,
-                    bookUrl: route.url,
+                    bookUrl: pageRoute.url,
                     title: detail.title,
                     author: detail.author,
                     cover: detail.cover,
@@ -658,6 +665,7 @@ export default function App() {
             );
           })()}
       </main>
+      {readerNode}
       {toastNode}
     </div>
   );

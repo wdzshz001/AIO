@@ -496,6 +496,11 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       await wait(800);
       await shot('manga-list');
       await clickFirst('.book-card');
+      await until(`!!document.querySelector('.chapter-item')`, 60_000, 'manga-book-scroll');
+      await js(`document.querySelector('.main').scrollTop = 240`);
+      await wait(200);
+      const bookScrollBefore = await js(`document.querySelector('.main').scrollTop`);
+      note('manga book scroll before read: ' + bookScrollBefore);
       await readBook('manga');
 
       // 漫画页码记录与续读
@@ -509,6 +514,9 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       note('manga saved page: ' + JSON.stringify(shelfPage));
       await js(`document.querySelector('.reader-head .icon-btn')?.click()`);
       await until(`!!document.querySelector('.chapter-item')`, 20_000, 'manga-back');
+      await wait(300);
+      const bookScrollAfter = await js(`document.querySelector('.main').scrollTop`);
+      note('manga book scroll after read: ' + bookScrollAfter);
       await js(`document.querySelector('.hero-actions .primary-btn')?.click()`);
       await until(`document.querySelectorAll('.comic-pages img').length > 0`, 30_000, 'manga-resume');
       await wait(1800);

@@ -161,7 +161,7 @@ export default function Reader({
         if (cached && alive) {
           applyContent(cached);
           if (cached.images?.length && settings.network.imagePreload) {
-            preloadImageWindow(cached.images, pageRef.current, 6, 1);
+            preloadImageWindow(cached.images, pageRef.current, 3, 1);
           }
           return;
         }
@@ -208,7 +208,7 @@ export default function Reader({
             }, 1500);
           }
         } else if (c.images?.length && settings.network.imagePreload) {
-          preloadImageWindow(c.images, pageRef.current, 6, 1);
+          preloadImageWindow(c.images, pageRef.current, 3, 1);
         }
       } catch (e) {
         if (!alive) return;
@@ -235,7 +235,7 @@ export default function Reader({
   // 漫画滚动到新页时，继续向前预取几页
   useEffect(() => {
     if (!settings.network.imagePreload || !content?.images?.length) return;
-    preloadImageWindow(content.images, page, 6, 1);
+    preloadImageWindow(content.images, page, 3, 1);
   }, [page, content?.images, settings.network.imagePreload]);
 
   useEffect(() => {
@@ -513,10 +513,9 @@ export default function Reader({
                 src={src}
                 alt={`第 ${i + 1} 页`}
                 loading={
-                  settings.network.imagePreload && (i < 4 || i === (initialPage ?? 1) - 1)
-                    ? 'eager'
-                    : 'lazy'
+                  settings.network.imagePreload && Math.abs(i - (page - 1)) <= 3 ? 'eager' : 'lazy'
                 }
+                decoding="async"
                 draggable={false}
               />
             ))}

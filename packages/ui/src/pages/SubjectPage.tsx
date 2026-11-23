@@ -210,6 +210,10 @@ export default function SubjectPage({
       setLookups(initial);
 
       const preferredSite = defaultPreferredSource || preferred[String(subject.id)] || '';
+      // 分批请求：首选源和当前排序靠前的源先查，避免一次性请求全部源
+      const lookupSites = preferredSite
+        ? [...animeSites].sort((a, b) => (a.id === preferredSite ? -1 : 0) - (b.id === preferredSite ? -1 : 0))
+        : animeSites;
       let settled = false;
       let stopped = false;
       let firstCandidate: SourceCandidate | null = null;
@@ -242,7 +246,7 @@ export default function SubjectPage({
 
       const task = findEpisodeSources(
         ctxFor,
-        animeSites,
+        lookupSites,
         subject,
         episode,
         (lookup) => {
@@ -250,7 +254,8 @@ export default function SubjectPage({
           setLookups((prev) => ({ ...prev, [lookup.siteId]: lookup }));
           consider(lookup);
         },
-        { shouldStop: () => stopped, concurrency: animeSites.length, timeoutMs: 8_000 },
+        // 每批最多 6 个；首批有候选就立即播放，没候选再补下一批
+        { shouldStop: () => stopped, concurrency: 6, timeoutMs: 8_000 },
       );
 
       void task
