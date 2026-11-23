@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AppDef, BookSection, Site, SiteCtx } from '@agg/core';
 import Cover from '../components/Cover';
 import AnimeHome from './AnimeHome';
@@ -43,21 +43,34 @@ export default function AppPage({
   const [reloadKey, setReloadKey] = useState(0);
   const [keyword, setKeyword] = useState('');
   const [otherStates, setOtherStates] = useState<Record<string, OtherState>>({});
+  const scrollPosRef = useRef(0);
 
-  // 从书籍/阅读页返回时恢复应用首页滚动位置
+  // 从书籍/阅读页返回时恢复应用首页滚动位置。
+  // 滚动事件持续记录，不能只在卸载 cleanup 里读，否则路由切换后可能已经是 0。
   useEffect(() => {
     const main = document.querySelector('.main');
     if (!main) return;
     const key = `agg.scroll.app.${app.id}`;
     const saved = Number(loadViewState(key, 0)) || 0;
+    scrollPosRef.current = saved;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    const restore = () => {
+      if (saved > 0) main.scrollTop = saved;
+    };
     if (saved > 0) {
-      timers.push(setTimeout(() => (main.scrollTop = saved), 250));
-      timers.push(setTimeout(() => (main.scrollTop = saved), 1000));
+      timers.push(setTimeout(restore, 250));
+      timers.push(setTimeout(restore, 1000));
+      timers.push(setTimeout(restore, 2200));
     }
+    const onScroll = () => {
+      scrollPosRef.current = main.scrollTop;
+      saveViewState(key, main.scrollTop);
+    };
+    main.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       timers.forEach(clearTimeout);
-      saveViewState(key, main.scrollTop);
+      main.removeEventListener('scroll', onScroll);
+      saveViewState(key, scrollPosRef.current);
     };
   }, [app.id, reloadKey]);
 

@@ -184,6 +184,34 @@ async function searchCloudwn(ctx: SiteCtx, keyword: string): Promise<BookRef[]> 
   return parseAlbums(doc).slice(0, 40);
 }
 
+/** 合集页：章节目录在 a[data-chid] 里，点进去是单话 album */
+function seriesChaptersOf(doc: Document): Chapter[] {
+  const out: Chapter[] = [];
+  const seen = new Set<string>();
+  for (const a of qsa<HTMLAnchorElement>(doc, 'a[data-chid][href*="photos-slide"]')) {
+    const chid = a.getAttribute('data-chid');
+    if (!chid || seen.has(chid)) continue;
+    seen.add(chid);
+    const title = clean(text(a)) || `第 ${out.length + 1} 话`;
+    out.push({
+      title,
+      url: `${BASE}/photos-index-aid-${chid}.html`,
+      order: out.length,
+    });
+  }
+  return out;
+}
+
+function coverOf(doc: Document): string | undefined {
+  const firstImg = qs<HTMLImageElement>(doc, '.gallary_wrap li.gallary_item img');
+  return (
+    qs<HTMLMetaElement>(doc, 'meta[property="og:image"]')?.getAttribute('content') ??
+    firstImg?.getAttribute('data-src') ??
+    firstImg?.getAttribute('src') ??
+    undefined
+  );
+}
+
 async function detailCloudwn(ctx: SiteCtx, url: string): Promise<BookDetail> {
   const doc = await ctx.doc(url);
   const id = albumId(url);
@@ -194,12 +222,16 @@ async function detailCloudwn(ctx: SiteCtx, url: string): Promise<BookDetail> {
     clean(text(qs(doc, 'h1')));
   if (!title) throw new Error('没有解析到漫画标题');
 
-  const firstImg = qs<HTMLImageElement>(doc, '.gallary_wrap li.gallary_item img');
-  const rawCover =
-    qs<HTMLMetaElement>(doc, 'meta[property="og:image"]')?.getAttribute('content') ??
-    firstImg?.getAttribute('data-src') ??
-    firstImg?.getAttribute('src') ??
-    undefined;
+  const series = seriesChaptersOf(doc);
+  let rawCover = coverOf(doc);
+  // 合集页通常不提供 og:image，用第一话封面兜底
+  if (!rawCover && series.length) {
+    try {
+      rawCover = coverOf(await ctx.doc(series[0].url));
+    } catch {
+      rawCover = undefined;
+    }
+  }
 
   const tags = qsa(doc, '.addtags a')
     .map((el) => text(el))
@@ -208,9 +240,9 @@ async function detailCloudwn(ctx: SiteCtx, url: string): Promise<BookDetail> {
     clean(qs<HTMLMetaElement>(doc, 'meta[name="description"]')?.getAttribute('content')) ||
     undefined;
   const pages = pagesOf(doc);
-  const chapters: Chapter[] = [
-    { title: pages > 1 ? `全一话 · ${pages} 张` : '全一话', url },
-  ];
+  const chapters: Chapter[] = series.length
+    ? series
+    : [{ title: pages > 1 ? `全一话 · ${pages} 张` : '全一话', url }];
 
   return {
     url,

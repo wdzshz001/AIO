@@ -458,8 +458,27 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       })()`);
       note('cloudwn source tab: ' + picked);
       await until(`document.querySelectorAll('.book-card').length > 0`, 60_000, 'cloudwn-books');
-      await clickFirst('.book-card');
+      if (process.env.AGG_SMOKE_CLOUDWN_SERIES === '1') {
+        const found = await js(`(() => {
+          const b = [...document.querySelectorAll('.book-card')].find((x) => x.innerText.includes('アオヒモファミリア'));
+          if (!b) return false;
+          b.click();
+          return true;
+        })()`);
+        note('cloudwn series card found: ' + found);
+        if (!found) await clickFirst('.book-card');
+      } else {
+        await clickFirst('.book-card');
+      }
       await until(`!!document.querySelector('.chapter-item')`, 60_000, 'cloudwn-book');
+      const chapterCount = await js(`document.querySelectorAll('.chapter-item').length`);
+      const coverInfo = await js(`(() => {
+        const img = document.querySelector('.book-hero img, .book-cover img, .book-cover');
+        if (!img) return null;
+        return { tag: img.tagName, w: img.naturalWidth || 0, src: (img.currentSrc || img.src || '').slice(0, 100) };
+      })()`);
+      note('cloudwn chapters: ' + chapterCount);
+      note('cloudwn cover: ' + JSON.stringify(coverInfo));
       await clickFirst('.chapter-item');
       await until(`document.querySelectorAll('.comic-pages img').length > 0`, 90_000, 'cloudwn-reader');
       await wait(6000);
@@ -494,6 +513,10 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       note('manga source tab: ' + picked);
       await until(`document.querySelectorAll('.book-card').length > 0`, 60_000, 'manga-books');
       await wait(800);
+      await js(`document.querySelector('.main').scrollTop = 300`);
+      await wait(200);
+      const appScrollBefore = await js(`document.querySelector('.main').scrollTop`);
+      note('manga app scroll before book: ' + appScrollBefore);
       await shot('manga-list');
       await clickFirst('.book-card');
       await until(`!!document.querySelector('.chapter-item')`, 60_000, 'manga-book-scroll');
@@ -531,6 +554,9 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       await until(`!!document.querySelector('.comic-home')`, 20_000, 'manga-app-again');
       const activeTab = await js(`document.querySelector('.comic-home .home-tab.active')?.innerText || ''`);
       note('manga source after back: ' + activeTab.replace(/\\s+/g, ' '));
+      await wait(500);
+      const appScrollAfter = await js(`document.querySelector('.main').scrollTop`);
+      note('manga app scroll after back: ' + appScrollAfter);
       note('MANGA OK');
       return;
     }
