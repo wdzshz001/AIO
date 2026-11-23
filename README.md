@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.2.4-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.2.5-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.2.4-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.2.5-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -100,10 +100,11 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **本地缓存与预加载**：小说正文/漫画章节内容写入 IndexedDB（12 小时），
   重复打开或重启后可命中；阅读时预取下一章，漫画按当前页附近分批预取，
   动画预取下一集页面。设置 → 存储与隐私 可查看/清理内容缓存。
-- **动画全屏**：Android 默认不再自动横屏；点播放器旁「全屏」后才横屏。
-  全屏中上一集/下一集/退出按钮默认隐藏，点击视频或空白区域短暂唤出 3 秒。
-- **版本显示**：Windows 热更新后「设置→关于」优先显示热更新后的前端版本，
-  并标注壳版本，例如 `0.2.4（壳 0.2.3）`。
+- **全屏阅读**：小说/漫画全屏时保留底栏（上一章、进度、下一章）；动画全屏时
+  上一集/下一集/退出按钮默认隐藏，点中心短暂唤出。
+- **漫画分批加载**：图片按可视区域 IntersectionObserver 逐批加载，不再进一话就拉全量。
+- **Android 后台声音**：隐藏 WebView 禁止媒体自动播放并静音，动画预取不再在后台启动播放。
+- **全屏按钮**：漫画/动画顶栏的全屏入口改为图标，避免文字溢出。
 - **返回不刷新**：阅读器以覆盖层打开，底层详情页保持挂载；
   从漫画/小说/动画阅读返回时保留滚动位置和已加载内容。
 - **CloudWN 合集**：详情目录优先于旧缓存，支持多话合集，封面缺失用第一话兜底。

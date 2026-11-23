@@ -852,6 +852,10 @@ img {
 }
 
 .reader.focus .reader-scroll {
+  padding: 0 0 84px;
+}
+
+.reader.focus .reader-scroll.has-video {
   padding: 0;
 }
 
@@ -1133,6 +1137,22 @@ img {
   gap: 12px;
   padding-top: 22px;
   border-top: 1px solid var(--r-line);
+}
+
+.reader-nav-fixed {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 90;
+  width: min(720px, calc(100vw - 28px));
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--r-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--r-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
 }
 
 .reader-nav .ghost-btn {

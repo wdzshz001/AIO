@@ -111,7 +111,7 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
     note(`${prefix} video player: ` + hasVideo);
     if (hasVideo) {
       const fsClicked = await js(
-        `(() => { const b = [...document.querySelectorAll('.reader-head button')].find((x) => x.textContent.trim() === '全屏'); if (!b) return false; b.click(); return true; })()`,
+        `(() => { const b = [...document.querySelectorAll('.reader-head button')].find((x) => x.title === '全屏播放' || x.getAttribute('aria-label') === '全屏播放'); if (!b) return false; b.click(); return true; })()`,
       ).catch(() => false);
       await js(`document.querySelector('.reader-scroll')?.click()`);
       await wait(500);

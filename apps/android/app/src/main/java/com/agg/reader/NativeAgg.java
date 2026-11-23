@@ -55,6 +55,10 @@ public final class NativeAgg {
             "https://api.github.com/repos/wdzshz001/AIO/releases/latest";
     private static final String UPDATE_APK =
             "https://github.com/wdzshz001/AIO/releases/latest/download/agg-reader-android.apk";
+    /** 隐藏 WebView 里只抓地址，不允许任何声音/视频抢占前台 */
+    private static final String MUTE_MEDIA_JS =
+            "(function(){var m=function(){try{document.querySelectorAll('video,audio').forEach(function(v){v.muted=true;v.volume=0;});}catch(e){}};"
+                    + "m();setInterval(m,700);try{new MutationObserver(m).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}})()";
     static final String UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -473,9 +477,16 @@ public final class NativeAgg {
         s.setAllowFileAccess(true);
         s.setAllowContentAccess(true);
         s.setUserAgentString(UA);
-        s.setMediaPlaybackRequiresUserGesture(false);
+        // 隐藏 WebView 只用于抓页面/媒体地址，禁止自动播放，避免前台加载时后台先出声
+        s.setMediaPlaybackRequiresUserGesture(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         CookieManager.getInstance().setAcceptThirdPartyCookies(v, true);
+        v.postDelayed(() -> {
+            try {
+                v.evaluateJavascript(MUTE_MEDIA_JS, null);
+            } catch (Exception ignored) {
+            }
+        }, 1200);
         return v;
     }
 

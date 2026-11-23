@@ -54,6 +54,52 @@ function prettyTitle(t: string): string {
   return t.replace(/\s*[（(]\d+\s*\/\s*\d+[）)]\s*$/, '').trim();
 }
 
+const TRANSPARENT_IMG =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+/** 漫画页按可视区域分批加载，避免进入一话时把全部图片请求出来 */
+function ComicImage({ src, index }: { src: string; index: number }) {
+  const ref = useRef<HTMLImageElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (visible) return;
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const root = el.closest('.reader-scroll');
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { root, rootMargin: '900px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+
+  return (
+    <img
+      ref={ref}
+      src={visible ? src : TRANSPARENT_IMG}
+      data-src={src}
+      alt={`第 ${index + 1} 页`}
+      decoding="async"
+      draggable={false}
+      style={loaded ? undefined : { minHeight: '68vh' }}
+      onLoad={() => {
+        if (visible) setLoaded(true);
+      }}
+    />
+  );
+}
+
 export default function Reader({
   site,
   ctx,
@@ -207,7 +253,7 @@ export default function Reader({
                 .catch(() => undefined);
             }, 800);
           }
-        } else if (c.video) {
+        } else if (c.video && !isAndroid) {
           const next = chapters[index + 1];
           if (next) {
             setTimeout(() => {
@@ -377,7 +423,6 @@ export default function Reader({
   const handleEnded = () => {
     if (prefs.autoNext && index < chapters.length - 1) setCountdown(5);
   };
-
   const enterVideoFullscreen = () => {
     setFullscreen(true);
     setVideoUiVisible(false);
@@ -421,13 +466,23 @@ export default function Reader({
             <span className="reader-chapter">{prettyTitle(chapter?.title ?? '')}</span>
           </div>
           {site.kind === 'comic' && (
-            <button className="icon-btn" onClick={() => setFullscreen(true)} title="全屏阅读">
-              全屏
+            <button
+              className="icon-btn"
+              onClick={() => setFullscreen(true)}
+              title="全屏阅读"
+              aria-label="全屏阅读"
+            >
+              ⤢
             </button>
           )}
           {content?.video && !fullscreen && (
-            <button className="icon-btn" onClick={enterVideoFullscreen} title="全屏播放">
-              全屏
+            <button
+              className="icon-btn"
+              onClick={enterVideoFullscreen}
+              title="全屏播放"
+              aria-label="全屏播放"
+            >
+              ⤢
             </button>
           )}
           {onSwitchSource && content?.video && (
@@ -520,7 +575,12 @@ export default function Reader({
         </div>
       )}
 
-      <div className="reader-scroll" ref={scrollRef} onScroll={handleScroll} onClick={toggleFullscreen}>
+      <div
+        className={'reader-scroll' + (content?.video ? ' has-video' : '')}
+        ref={scrollRef}
+        onScroll={handleScroll}
+        onClick={toggleFullscreen}
+      >
         {loading && (
           <div className="loading">
             <span className="spinner" />
@@ -581,16 +641,7 @@ export default function Reader({
         {content && !loading && content.images && content.images.length > 0 && (
           <div className={'comic-pages comic-' + prefs.comicFit}>
             {content.images.map((src, i) => (
-              <img
-                key={src + i}
-                src={src}
-                alt={`第 ${i + 1} 页`}
-                loading={
-                  settings.network.imagePreload && Math.abs(i - (page - 1)) <= 3 ? 'eager' : 'lazy'
-                }
-                decoding="async"
-                draggable={false}
-              />
+              <ComicImage key={src + i} src={src} index={i} />
             ))}
             <p className="comic-end">已显示全部 {content.images.length} 页</p>
           </div>
@@ -614,8 +665,8 @@ export default function Reader({
           </article>
         )}
 
-        {!fullscreen && (
-          <nav className="reader-nav">
+        {!content?.video && (
+          <nav className={'reader-nav' + (fullscreen ? ' reader-nav-fixed' : '')}>
             <button className="ghost-btn" disabled={index <= 0} onClick={() => onNavigate(index - 1)}>
               {site.kind === 'comic' ? '上一话' : '上一章'}
             </button>
