@@ -21,6 +21,8 @@ interface Props {
   onPlay: (candidate: SourceCandidate, episode: BangumiEpisode, subject: BangumiSubject) => void;
   /** 从播放页返回时自动打开该集的选源面板 */
   autoEpisodeSort?: string;
+  /** 最近阅读进入时直接自动选源播放；普通返回只打选源面板 */
+  autoPlay?: boolean;
   /** 设置里的动画首选源；有就优先等它，超时后仍用最先返回的源 */
   defaultPreferredSource?: string;
 }
@@ -61,6 +63,7 @@ export default function SubjectPage({
   onBack,
   onPlay,
   autoEpisodeSort,
+  autoPlay = false,
   defaultPreferredSource,
 }: Props) {
   const [subject, setSubject] = useState<BangumiSubject | null>(null);
@@ -301,9 +304,12 @@ export default function SubjectPage({
   useEffect(() => {
     if (!autoEpisodeSort || !subject || !episodes.length) return;
     const ep = episodes.find((e) => episodeCode(e) === autoEpisodeSort);
-    if (ep) void openPicker(ep);
+    if (!ep) return;
+    // 最近阅读进入：和点选集一样自动选源播放；从播放页返回则只打选源面板
+    if (autoPlay) void playEpisode(ep);
+    else void openPicker(ep);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoEpisodeSort, subject, episodes]);
+  }, [autoEpisodeSort, autoPlay, subject, episodes]);
 
   const closePicker = () => {
     setPickerEpisode(null);

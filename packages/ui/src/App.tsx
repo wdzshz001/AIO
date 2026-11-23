@@ -39,7 +39,7 @@ export type Route =
   | { name: 'settings-nsfw' }
   | { name: 'settings-section'; section: SettingsSection }
   | { name: 'book'; siteId: string; url: string }
-  | { name: 'subject'; subjectId: number; autoEpisodeSort?: string }
+  | { name: 'subject'; subjectId: number; autoEpisodeSort?: string; autoPlay?: boolean }
   | {
       name: 'read';
       siteId: string;
@@ -218,7 +218,10 @@ export default function App() {
   }, [showToast]);
 
   const route = stack[stack.length - 1];
-  const visibleShelf = shelf.filter((e) => !e.siteId || sites.some((s) => s.id === e.siteId));
+  const visibleShelf = shelf.filter(
+    // 动画历史属于 Bangumi 条目，不随某个源禁用而消失
+    (e) => !!e.subjectId || !e.siteId || sites.some((s) => s.id === e.siteId),
+  );
 
   // 外观设置：主题 / 强调色 / 密度 / 动效
   useEffect(() => {
@@ -308,7 +311,21 @@ export default function App() {
   const openEntry = useCallback(
     (entry: ShelfEntry) => {
       if (entry.subjectId) {
-        push({ name: 'subject', subjectId: entry.subjectId, autoEpisodeSort: entry.chapter?.sort });
+        let sort = entry.chapter?.sort;
+        // 旧版本书架可能没有 sort，从章节标题补一次，避免最近观看进动画不自动选源
+        if (!sort && entry.chapter?.title) {
+          const parsed = matchEpisodeSortFromName(
+            entry.chapter.title,
+            '第\\s*(?<ep>.+)\\s*[话集]',
+          );
+          if (parsed.kind !== 'unknown') sort = formatEpisodeSort(parsed);
+        }
+        push({
+          name: 'subject',
+          subjectId: entry.subjectId,
+          autoEpisodeSort: sort,
+          autoPlay: true,
+        });
         return;
       }
       const cached = cachedChapters(entry.url);
@@ -642,6 +659,7 @@ export default function App() {
             ctxFor={ctxFor}
             shelf={shelf}
             autoEpisodeSort={pageRoute.autoEpisodeSort}
+            autoPlay={pageRoute.autoPlay}
             defaultPreferredSource={settings.preferredSource?.anime}
             onBack={back}
             onPlay={(candidate: SourceCandidate, episode: BangumiEpisode, subject: BangumiSubject) => {

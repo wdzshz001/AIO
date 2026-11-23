@@ -171,6 +171,8 @@ export default function Reader({
     videoUiTimer.current = setTimeout(() => setVideoUiVisible(false), ms);
   };
 
+  const enterVideoFullscreenRef = useRef<() => void>(() => undefined);
+
   // 离开阅读器时恢复竖屏/系统方向
   useEffect(() => {
     return () => {
@@ -436,6 +438,16 @@ export default function Reader({
     setVideoUiVisible(false);
     if (isAndroid) void bridge.setVideoFullscreen?.(true);
   };
+  enterVideoFullscreenRef.current = enterVideoFullscreen;
+
+  // Android 原生播放器全屏按钮：转成自定义全屏，才能显示上下集和退出按钮
+  useEffect(() => {
+    const w = window as unknown as { __aggEnterVideoFullscreen?: () => void };
+    w.__aggEnterVideoFullscreen = () => enterVideoFullscreenRef.current();
+    return () => {
+      delete w.__aggEnterVideoFullscreen;
+    };
+  }, []);
 
   const exitVideoFullscreen = () => {
     setFullscreen(false);
@@ -677,7 +689,7 @@ export default function Reader({
           </article>
         )}
 
-        {!content?.video && (
+        {!loading && content && !content.video && (
           <nav className={'reader-nav' + (!fullscreen ? ' reader-nav-fixed' : '')}>
             <button className="ghost-btn" disabled={index <= 0} onClick={() => onNavigate(index - 1)}>
               {site.kind === 'comic' ? '上一话' : '上一章'}

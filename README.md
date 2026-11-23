@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.2.6-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.2.7-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.2.6-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.2.7-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -100,8 +100,10 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **本地缓存与预加载**：小说正文/漫画章节内容写入 IndexedDB（12 小时），
   重复打开或重启后可命中；阅读时预取下一章，漫画按当前页附近分批预取，
   动画预取下一集页面。设置 → 存储与隐私 可查看/清理内容缓存。
-- **全屏阅读**：小说/漫画非全屏时底栏固定在视口底部；全屏时底栏在正文末尾，
-  滚到底出现。动画原生全屏按钮恢复可用，顶部全屏入口改为 SVG 图标。
+- **全屏播放**：Android 原生播放器全屏按钮会转入应用内全屏，保留上一集/下一集/退出控制；
+  加载动画时不再误显示小说/漫画底栏。
+- **最近阅读**：动画条目直接按上次集号自动选源播放，不再只打开选源面板；
+  动画历史不随某个源被禁用而消失。
 - **路由保存**：小说/动画/漫画都会保存完整返回栈，重启后可回到上次页面；
   小说分类/排行列表页也会恢复。
 - **漫画分批加载**：图片按可视区域 IntersectionObserver 逐批加载，不再进一话就拉全量。

@@ -98,6 +98,24 @@ public class MainActivity extends Activity {
                     callback.onCustomViewHidden();
                     return;
                 }
+                // 原生播放器全屏按钮：优先转成应用内全屏控制层（带上一集/下一集）
+                webView.evaluateJavascript(
+                        "(typeof window.__aggEnterVideoFullscreen === 'function')",
+                        value -> {
+                            if ("true".equals(value)) {
+                                callback.onCustomViewHidden();
+                                webView.postDelayed(
+                                        () -> webView.evaluateJavascript(
+                                                "window.__aggEnterVideoFullscreen&&window.__aggEnterVideoFullscreen()",
+                                                null),
+                                        80);
+                                return;
+                            }
+                            showNativeFullscreen(view, callback);
+                        });
+            }
+
+            private void showNativeFullscreen(View view, CustomViewCallback callback) {
                 customView = view;
                 customViewCallback = callback;
                 root.addView(view, new FrameLayout.LayoutParams(
