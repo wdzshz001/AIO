@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.2.5-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.2.6-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -61,7 +61,11 @@
 - **阅读全屏**：小说/漫画点击阅读器中心切换工具栏；漫画默认全屏。
 - **Android 动画全屏**：默认不横屏；点全屏图标后调用原生 `setVideoFullscreen(true)`
   横屏，退出恢复。全屏控制层默认隐藏，点击视频/空白唤出上一集、下一集、退出按钮 3 秒。
-- **全屏底栏**：小说/漫画全屏时底部导航固定保留；动画全屏走独立控制层。
+- **全屏底栏**：非全屏时固定视口底部；全屏时位于正文末尾，滚到底出现。
+  动画原生播放器全屏按钮恢复；顶部全屏入口使用 SVG 图标。
+- **路由保存**：`agg.routeStack.v1` 保存完整返回栈（阅读器路由不落盘），
+  小说 `/category` 子列表 `agg.novel.list.v1` 也会恢复。
+- **阅读滚动**：AppPage 持续监听并保存 `.main` 滚动，内容加载后多次补恢复。
 - **漫画分批加载**：`ComicImage` 用 IntersectionObserver + 占位高度，仅加载视口附近页；
   CloudWN 等长图源不再一话全量请求。
 - **Android 后台播放**：隐藏 WebView `setMediaPlaybackRequiresUserGesture(true)` + 静音注入；
@@ -90,7 +94,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.2.5-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.2.6-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

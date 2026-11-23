@@ -114,7 +114,14 @@ export default function NovelHome({ ctxFor, onOpenBook }: Props) {
   }, [catId]);
 
   const [reloadKey, setReloadKey] = useState(0);
-  const [listView, setListView] = useState<ListState | null>(null);
+  const [listView, setListView] = useState<ListState | null>(() => {
+    const saved = loadViewState<ListState | null>('agg.novel.list.v1', null);
+    return saved ? { ...saved, loading: false, error: '' } : null;
+  });
+
+  useEffect(() => {
+    saveViewState('agg.novel.list.v1', listView);
+  }, [listView]);
 
   const openMore = (section: BookSection) => {
     if (!section.moreUrl) return;

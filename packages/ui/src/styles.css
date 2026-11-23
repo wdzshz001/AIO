@@ -852,11 +852,11 @@ img {
 }
 
 .reader.focus .reader-scroll {
-  padding: 0 0 84px;
+  padding: 0;
 }
 
-.reader.focus .reader-scroll.has-video {
-  padding: 0;
+.reader-scroll.has-fixed-nav {
+  padding-bottom: 84px;
 }
 
 .reader.focus .reader-video {
@@ -1023,6 +1023,29 @@ img {
   background: transparent;
   border-color: var(--r-line);
   color: var(--r-dim);
+  min-width: 34px;
+  width: auto;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.reader-head .icon-btn.fullscreen-btn {
+  width: 34px;
+  padding: 0;
+}
+
+.reader-head .icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reader-head .switch-btn {
+  font-size: 12px;
 }
 
 .reader-head .icon-btn:hover,

@@ -179,7 +179,6 @@ export default function VideoPlayer({
       ref={ref}
       className="player"
       controls
-      controlsList="nofullscreen"
       playsInline
       autoPlay={autoPlay}
       poster={poster}

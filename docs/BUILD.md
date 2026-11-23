@@ -4,8 +4,8 @@
 
 | 端 | 产物 | 技术栈 |
 |---|---|---|
-| Windows | `release/聚合阅读-0.2.5-portable.exe` | Electron 45 + React |
-| Android | `release/agg-reader-0.2.5-android.apk` | 原生 Android WebView + Java 桥 |
+| Windows | `release/聚合阅读-0.2.6-portable.exe` | Electron 45 + React |
+| Android | `release/agg-reader-0.2.6-android.apk` | 原生 Android WebView + Java 桥 |
 
 ---
 
@@ -40,7 +40,7 @@ npm run dist:win
 产物：
 
 ```text
-release/聚合阅读-0.2.5-portable.exe
+release/聚合阅读-0.2.6-portable.exe
 ```
 
 ### 配置位置
@@ -110,7 +110,7 @@ apps/android/app/build/outputs/apk/debug/app-debug.apk
 交付副本：
 
 ```text
-release/agg-reader-0.2.5-android.apk
+release/agg-reader-0.2.6-android.apk
 ```
 
 安装：

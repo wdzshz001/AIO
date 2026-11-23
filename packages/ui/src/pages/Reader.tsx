@@ -57,6 +57,14 @@ function prettyTitle(t: string): string {
 const TRANSPARENT_IMG =
   'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
+function ExpandIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" />
+    </svg>
+  );
+}
+
 /** 漫画页按可视区域分批加载，避免进入一话时把全部图片请求出来 */
 function ComicImage({ src, index }: { src: string; index: number }) {
   const ref = useRef<HTMLImageElement>(null);
@@ -467,22 +475,22 @@ export default function Reader({
           </div>
           {site.kind === 'comic' && (
             <button
-              className="icon-btn"
+              className="icon-btn fullscreen-btn"
               onClick={() => setFullscreen(true)}
               title="全屏阅读"
               aria-label="全屏阅读"
             >
-              ⤢
+              <ExpandIcon />
             </button>
           )}
           {content?.video && !fullscreen && (
             <button
-              className="icon-btn"
+              className="icon-btn fullscreen-btn"
               onClick={enterVideoFullscreen}
               title="全屏播放"
               aria-label="全屏播放"
             >
-              ⤢
+              <ExpandIcon />
             </button>
           )}
           {onSwitchSource && content?.video && (
@@ -576,7 +584,11 @@ export default function Reader({
       )}
 
       <div
-        className={'reader-scroll' + (content?.video ? ' has-video' : '')}
+        className={
+          'reader-scroll' +
+          (content?.video ? ' has-video' : '') +
+          (!fullscreen && !content?.video ? ' has-fixed-nav' : '')
+        }
         ref={scrollRef}
         onScroll={handleScroll}
         onClick={toggleFullscreen}
@@ -666,7 +678,7 @@ export default function Reader({
         )}
 
         {!content?.video && (
-          <nav className={'reader-nav' + (fullscreen ? ' reader-nav-fixed' : '')}>
+          <nav className={'reader-nav' + (!fullscreen ? ' reader-nav-fixed' : '')}>
             <button className="ghost-btn" disabled={index <= 0} onClick={() => onNavigate(index - 1)}>
               {site.kind === 'comic' ? '上一话' : '上一章'}
             </button>

@@ -73,6 +73,29 @@ function initialRoute(): Route {
   return { name: 'home' };
 }
 
+const RESTORABLE_ROUTES = ['home', 'app', 'book', 'subject', 'search'];
+
+function isRestorableRoute(value: unknown): value is Route {
+  if (!value || typeof value !== 'object') return false;
+  const name = (value as { name?: unknown }).name;
+  return typeof name === 'string' && RESTORABLE_ROUTES.includes(name);
+}
+
+function initialStack(): Route[] {
+  const settings = loadSettings();
+  if (settings.startup.page === 'last') {
+    try {
+      const raw = JSON.parse(localStorage.getItem('agg.routeStack.v1') || 'null') as unknown;
+      if (Array.isArray(raw) && raw.length && raw.every(isRestorableRoute)) {
+        return raw;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return [initialRoute()];
+}
+
 function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -159,7 +182,7 @@ function findTargetChapterIndex(list: Chapter[], title: string, fallback: number
 }
 
 export default function App() {
-  const [stack, setStack] = useState<Route[]>(() => [initialRoute()]);
+  const [stack, setStack] = useState<Route[]>(() => initialStack());
   const [shelf, setShelf] = useState<ShelfEntry[]>(() => loadShelf());
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -229,7 +252,12 @@ export default function App() {
     if (['home', 'app', 'book', 'subject', 'search'].includes(route.name)) {
       localStorage.setItem('agg.lastRoute.v1', JSON.stringify(route));
     }
-  }, [route]);
+    // 保存整条返回栈；阅读器路由不落盘（内容/章节表太大，进度由书架负责）
+    const persistable = stack.filter(isRestorableRoute);
+    if (persistable.length) {
+      localStorage.setItem('agg.routeStack.v1', JSON.stringify(persistable));
+    }
+  }, [route, stack]);
 
   const push = useCallback((r: Route) => setStack((s) => [...s, r]), []);
   const back = useCallback(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)), []);

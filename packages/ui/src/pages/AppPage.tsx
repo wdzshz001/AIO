@@ -54,14 +54,24 @@ export default function AppPage({
     const saved = Number(loadViewState(key, 0)) || 0;
     scrollPosRef.current = saved;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    let userScrolled = false;
+    const markUserScroll = () => {
+      userScrolled = true;
+    };
     const restore = () => {
-      if (saved > 0) main.scrollTop = saved;
+      if (saved > 0 && !userScrolled) main.scrollTop = saved;
     };
     if (saved > 0) {
       timers.push(setTimeout(restore, 250));
       timers.push(setTimeout(restore, 1000));
       timers.push(setTimeout(restore, 2200));
+      // 小说/动画首页可能 2 秒后才回来内容，加载完成后再补一次
+      timers.push(setTimeout(restore, 3500));
+      timers.push(setTimeout(restore, 5000));
     }
+    main.addEventListener('wheel', markUserScroll, { passive: true });
+    main.addEventListener('touchstart', markUserScroll, { passive: true });
+    main.addEventListener('pointerdown', markUserScroll);
     const onScroll = () => {
       scrollPosRef.current = main.scrollTop;
       saveViewState(key, main.scrollTop);
@@ -69,6 +79,9 @@ export default function AppPage({
     main.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       timers.forEach(clearTimeout);
+      main.removeEventListener('wheel', markUserScroll);
+      main.removeEventListener('touchstart', markUserScroll);
+      main.removeEventListener('pointerdown', markUserScroll);
       main.removeEventListener('scroll', onScroll);
       saveViewState(key, scrollPosRef.current);
     };
