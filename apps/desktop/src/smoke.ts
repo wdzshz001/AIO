@@ -308,6 +308,25 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       return;
     }
 
+    if (process.env.AGG_SMOKE_CACHE_STATS === '1') {
+      const stats = await js(`new Promise((resolve) => {
+        const req = indexedDB.open('agg-content-cache');
+        req.onerror = () => resolve({ error: 'open' });
+        req.onsuccess = () => {
+          try {
+            const store = req.result.transaction('chapters', 'readonly').objectStore('chapters');
+            const count = store.count();
+            const all = store.getAll();
+            all.onsuccess = () => resolve({ count: count.result, entries: all.result.map((r) => ({ key: r.key, bytes: r.bytes })) });
+            all.onerror = () => resolve({ error: 'getAll' });
+          } catch (e) { resolve({ error: String(e) }); }
+        };
+      })`);
+      note('content cache stats: ' + JSON.stringify(stats));
+      await shot('cache-stats');
+      return;
+    }
+
     if (process.env.AGG_SMOKE_SEARCH_HISTORY === '1') {
       await js(`localStorage.removeItem('agg.searchHistory.v1')`);
       await js(`(() => {

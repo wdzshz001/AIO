@@ -169,7 +169,16 @@ public final class MediaProxy {
                 String cr = resp.header("Content-Range");
                 if (cr != null) writeHeader(out, "Content-Range", cr);
                 writeHeader(out, "Access-Control-Allow-Origin", "*");
-                writeHeader(out, "Cache-Control", "public, max-age=3600");
+                String cacheControl;
+                if (ctLower.startsWith("image/")) {
+                    cacheControl = "public, max-age=604800, immutable";
+                } else if (urlLower.contains(".ts") || urlLower.contains(".m4s")
+                        || ctLower.contains("mp2t") || ctLower.contains("iso.segment")) {
+                    cacheControl = "public, max-age=86400";
+                } else {
+                    cacheControl = "public, max-age=3600";
+                }
+                writeHeader(out, "Cache-Control", cacheControl);
                 writeHeader(out, "Connection", "close");
                 out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
                 if (!"HEAD".equalsIgnoreCase(method) && body != null) {

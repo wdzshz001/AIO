@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Chapter, ChapterContent, Site, SiteCtx } from '@agg/core';
 import { formatDuration, loadPrefs, savePrefs, type ReaderPrefs } from '../store';
+import {
+  getContentCache,
+  contentCacheKey,
+  putContentCache,
+  putMediaCache,
+  readContentCache,
+  readMediaCache,
+} from '../contentCache';
+import { preloadImageWindow } from '../preload';
 import { useSites } from '../sites';
 import { bridge } from '../bridge';
 import VideoPlayer from '../components/VideoPlayer';
@@ -118,10 +127,25 @@ export default function Reader({
       onProgress(index);
       onContentReady?.();
     };
+    const applyContent = (c: ChapterContent) => {
+      setContent(c);
+      setLoading(false);
+      announce();
+      if (c.images?.length) {
+        const p = Math.min(Math.max(1, initialPage ?? 1), c.images.length);
+        pageRef.current = p;
+        setPage(p);
+        onPageProgress?.(index, p, c.images.length);
+      } else {
+        pageRef.current = 1;
+        setPage(1);
+      }
+    };
     const autoSwitchTried = new Set<string>();
     (async () => {
       try {
         if (!chapter) throw new Error('章节不存在');
+        const cacheKey = contentCacheKey(site.id, chapter.url);
         const canAutoSwitch = !!onAutoSwitch && !autoSwitchTried.has(chapter.url);
         if (canAutoSwitch && chapter.locked) {
           autoSwitchTried.add(chapter.url);
@@ -130,6 +154,18 @@ export default function Reader({
           if (!alive) return;
           if (switched) return;
         }
+
+        // 先读本地持久化缓存：重复打开/重启后也能秒开
+        let cached = readContentCache(cacheKey) ?? readMediaCache(cacheKey);
+        if (!cached) cached = await getContentCache(cacheKey);
+        if (cached && alive) {
+          applyContent(cached);
+          if (cached.images?.length && settings.network.imagePreload) {
+            preloadImageWindow(cached.images, pageRef.current, 6, 1);
+          }
+          return;
+        }
+
         const c = await ctx.site.chapter(ctx, chapter.url, (partial) => {
           if (!alive) return;
           setContent(partial);
@@ -137,23 +173,42 @@ export default function Reader({
           announce();
         });
         if (!alive) return;
-        setContent(c);
-        announce();
-        if (c.images?.length) {
-          const p = Math.min(Math.max(1, initialPage ?? 1), c.images.length);
-          pageRef.current = p;
-          setPage(p);
-          onPageProgress?.(index, p, c.images.length);
-        } else {
-          pageRef.current = 1;
-          setPage(1);
-        }
+        applyContent(c);
+        if (c.video) putMediaCache(cacheKey, c);
+        else if (!c.streaming) void putContentCache(cacheKey, c);
 
-        // 正文才预取相邻章（视频/漫画页需要真实加载，预取反而浪费）
+        // 预取：小说下一章正文、动画下一集页面；漫画预热当前页附近图片
         if (!c.video && !c.images?.length) {
-          for (const u of [chapters[index + 1]?.url, chapters[index - 1]?.url]) {
-            if (u) ctx.html(u, { render: true }).catch(() => undefined);
+          const next = chapters[index + 1];
+          if (next) {
+            setTimeout(() => {
+              const nextKey = contentCacheKey(site.id, next.url);
+              ctx.site
+                .chapter(ctx, next.url)
+                .then((nextContent) => {
+                  if (nextContent && !nextContent.streaming) {
+                    if (nextContent.video) putMediaCache(nextKey, nextContent);
+                    else void putContentCache(nextKey, nextContent);
+                  }
+                })
+                .catch(() => undefined);
+            }, 800);
           }
+        } else if (c.video) {
+          const next = chapters[index + 1];
+          if (next) {
+            setTimeout(() => {
+              const nextKey = contentCacheKey(site.id, next.url);
+              ctx.site
+                .chapter(ctx, next.url)
+                .then((nextContent) => {
+                  if (nextContent?.video) putMediaCache(nextKey, nextContent);
+                })
+                .catch(() => undefined);
+            }, 1500);
+          }
+        } else if (c.images?.length && settings.network.imagePreload) {
+          preloadImageWindow(c.images, pageRef.current, 6, 1);
         }
       } catch (e) {
         if (!alive) return;
@@ -176,6 +231,12 @@ export default function Reader({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, chapter?.url, index]);
+
+  // 漫画滚动到新页时，继续向前预取几页
+  useEffect(() => {
+    if (!settings.network.imagePreload || !content?.images?.length) return;
+    preloadImageWindow(content.images, page, 6, 1);
+  }, [page, content?.images, settings.network.imagePreload]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });

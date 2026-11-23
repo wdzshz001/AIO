@@ -8,6 +8,7 @@
 > 项目当前进度、已知问题、待办与环境踩坑，见 [HANDOVER.md](HANDOVER.md)。
 > 双端编译步骤见 [docs/BUILD.md](docs/BUILD.md)，双端架构差异/修改影响范围见 [docs/PLATFORM.md](docs/PLATFORM.md)。
 > Git CI 与热更新方案见 [docs/HOT-UPDATE.md](docs/HOT-UPDATE.md)。
+> 本地缓存与预加载方案见 [docs/CACHE-PRELOAD.md](docs/CACHE-PRELOAD.md)。
 > 与 animeko 的逐项对照见 [docs/ANI-COMPARISON.md](docs/ANI-COMPARISON.md)。
 
 当前完成 **P0**：Windows 桌面端，三个应用（小说 / 动画 / 漫画）跑通完整链路。动画已切到「Bangumi 条目 → 单集 → 选源 → 播放」。
@@ -24,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.1.5-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.1.6-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.1.5-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.1.6-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -96,6 +97,9 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
   **NSFW 标记**三级页，逐源标记；CloudWN / MYCOMIC 默认标记，拷贝漫画默认普通。
 - **内容源**：逐源启用/禁用、上下排序、分类首选源、单源健康检查、验证、清 Cookie。
 - **搜索**：点击搜索框显示最近 12 条搜索历史，可单条重搜或一键清除。
+- **本地缓存与预加载**：小说正文/漫画章节内容写入 IndexedDB（12 小时），
+  重复打开或重启后可命中；阅读时预取下一章，漫画按当前页预取附近 6 页，
+  动画预取下一集页面。设置 → 存储与隐私 可查看/清理内容缓存。
 - **阅读与播放**：小说字号/行距/段距/正文宽度/主题；漫画默认全屏阅读（隐藏顶部标题）；
   动画自动连播、默认优先源（默认樱花动漫）、倍速、静音、默认清晰度；
   漫画默认优先源为拷贝漫画。

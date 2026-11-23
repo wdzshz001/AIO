@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.1.5-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.1.6-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -55,6 +55,9 @@
   交付包附带 `README.txt` 与 SHA256。
 - **Windows 热更新**：`hot:win` bundle + GitHub Release；启动只提示，About 页手动检查下载；
   主进程覆盖 `agg://` 的 index/renderer/css，SHA256 校验，失败回退内置版本。
+- **本地缓存/预加载**：`packages/ui/src/contentCache.ts` 用 IndexedDB 持久化
+  小说正文/漫画章节（12h、最多 80 条、可清理）；`preload.ts` 预取漫画附近页；
+  Reader 预取下一章/下一集页面。图片/HLS 分片由代理层加 Cache-Control。
 - **Android 签名**：`apps/android/debug.keystore` 是自用固定 debug 证书，CI 和本地一致，
   APK 可覆盖安装；不要用于正式分发。
 - **Android 更新**：设置 → 关于 → 检查更新，从 GitHub Release 的
@@ -66,7 +69,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.1.5-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.1.6-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

@@ -1172,6 +1172,12 @@ app.whenReady().then(() => {
     if (contentLength) out.set('content-length', contentLength);
     const contentRange = upstream.headers.get('content-range');
     if (contentRange) out.set('content-range', contentRange);
+    // 图片/HLS 分片是重复访问最多的资源，交给 Chromium HTTP 缓存
+    if (/^image\//i.test(ctype)) {
+      out.set('cache-control', 'public, max-age=604800, immutable');
+    } else if (/\.(ts|m4s)(\?|$)/i.test(target) || /video\/(mp2t|iso\.segment)/i.test(ctype)) {
+      out.set('cache-control', 'public, max-age=86400');
+    }
 
     // 分片（.ts / .m4s 等）由 hls.js 用 fetch 读取，需要补 CORS；仍然流式透传
     return new Response(body, { status: upstream.status, headers: out });

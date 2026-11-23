@@ -15,6 +15,7 @@ import {
   type ReaderPrefs,
 } from '../store';
 import { sourceGroups } from '../sourceGroups';
+import { contentCacheStats, clearContentCache } from '../contentCache';
 import type { SettingsSection } from '../settingsTypes';
 import { useSites } from '../sites';
 
@@ -682,12 +683,23 @@ function StartupSettings({ onBack }: SectionProps) {
 function StorageSettings({ onBack }: SectionProps) {
   const { allSites, settings, updateSettings } = useSites();
   const [stats, setStats] = useState(() => storageUsage());
+  const [contentStats, setContentStats] = useState({ count: 0, bytes: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
-  const refresh = () => setStats(storageUsage());
+  const refresh = () => {
+    setStats(storageUsage());
+    void contentCacheStats().then(setContentStats);
+  };
+  useEffect(() => {
+    void contentCacheStats().then(setContentStats);
+  }, []);
   const total = stats.reduce((n, x) => n + x.bytes, 0);
 
   const clearChapters = () => {
     clearChapterCaches();
+    refresh();
+  };
+  const clearContent = async () => {
+    await clearContentCache();
     refresh();
   };
   const clearHistory = () => {
@@ -705,6 +717,7 @@ function StorageSettings({ onBack }: SectionProps) {
       if (key && key.startsWith('agg.')) keys.push(key);
     }
     for (const key of keys) localStorage.removeItem(key);
+    void clearContentCache();
     window.location.reload();
   };
   const exportFile = () => {
@@ -740,6 +753,9 @@ function StorageSettings({ onBack }: SectionProps) {
           <button className="ghost-btn" onClick={clearChapters}>
             清理章节缓存
           </button>
+          <button className="ghost-btn" onClick={() => void clearContent()}>
+            清理内容缓存
+          </button>
           <button className="ghost-btn" onClick={clearHistory}>
             清空最近记录
           </button>
@@ -747,6 +763,10 @@ function StorageSettings({ onBack }: SectionProps) {
             清空站点 Cookie
           </button>
         </div>
+        <p className="muted small">
+          内容缓存：{contentStats.count} 条 · {(contentStats.bytes / 1024).toFixed(1)} KB
+          （小说正文/漫画章节，12 小时有效；图片由系统/原生缓存）
+        </p>
       </Card>
 
       <Card title="隐私">
