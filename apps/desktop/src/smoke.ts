@@ -525,6 +525,12 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       const resumePos = await js(`document.querySelector('.reader-pos')?.textContent || ''`);
       note('manga resume pos: ' + resumePos.replace(/\\s+/g, ' '));
       await shot('manga-resume');
+      await js(`document.querySelector('.reader-head .icon-btn')?.click()`);
+      await until(`!!document.querySelector('.chapter-item')`, 20_000, 'manga-book-again');
+      await js(`document.querySelector('.page-head .head-left .icon-btn')?.click()`);
+      await until(`!!document.querySelector('.comic-home')`, 20_000, 'manga-app-again');
+      const activeTab = await js(`document.querySelector('.comic-home .home-tab.active')?.innerText || ''`);
+      note('manga source after back: ' + activeTab.replace(/\\s+/g, ' '));
       note('MANGA OK');
       return;
     }

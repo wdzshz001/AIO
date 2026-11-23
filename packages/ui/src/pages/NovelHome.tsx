@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { BookRef, BookSection, SiteCtx } from '@agg/core';
 import {
   QIDIAN_CATEGORIES,
@@ -8,6 +8,7 @@ import {
   loadQidianRank,
 } from '@agg/adapters';
 import Cover from '../components/Cover';
+import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
   ctxFor: (siteId: string) => SiteCtx | null;
@@ -83,7 +84,7 @@ function Sections({
 }
 
 export default function NovelHome({ ctxFor, onOpenBook }: Props) {
-  const [tab, setTab] = useState<Tab>('recommend');
+  const [tab, setTab] = useState<Tab>(() => loadViewState('agg.novel.tab.v1', 'recommend'));
   const [home, setHome] = useState<BookSection[]>([]);
   const [homeLoading, setHomeLoading] = useState(true);
   const [homeError, setHomeError] = useState('');
@@ -93,10 +94,24 @@ export default function NovelHome({ ctxFor, onOpenBook }: Props) {
   const [rankLoaded, setRankLoaded] = useState(false);
   const [rankError, setRankError] = useState('');
 
-  const [catId, setCatId] = useState<string>(QIDIAN_CATEGORIES[0].id);
+  const [catId, setCatId] = useState<string>(() =>
+    loadViewState('agg.novel.category.v1', QIDIAN_CATEGORIES[0].id),
+  );
   const [catSections, setCatSections] = useState<BookSection[]>([]);
   const [catLoading, setCatLoading] = useState(false);
   const [catError, setCatError] = useState('');
+
+  useEffect(() => {
+    saveViewState('agg.novel.tab.v1', tab);
+  }, [tab]);
+
+  useEffect(() => {
+    if (!QIDIAN_CATEGORIES.some((c) => c.id === catId)) {
+      setCatId(QIDIAN_CATEGORIES[0].id);
+      return;
+    }
+    saveViewState('agg.novel.category.v1', catId);
+  }, [catId]);
 
   const [reloadKey, setReloadKey] = useState(0);
   const [listView, setListView] = useState<ListState | null>(null);

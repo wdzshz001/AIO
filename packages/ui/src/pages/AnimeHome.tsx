@@ -8,6 +8,7 @@ import {
 } from '@agg/adapters';
 import Cover from '../components/Cover';
 import { bridge } from '../bridge';
+import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
   onOpenSubject: (subjectId: number) => void;
@@ -79,9 +80,15 @@ export default function AnimeHome({ onOpenSubject }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [day, setDay] = useState(() => {
     const dow = new Date().getDay();
-    return dow === 0 ? 7 : dow;
+    const today = dow === 0 ? 7 : dow;
+    const saved = loadViewState('agg.anime.day.v1', today);
+    return saved >= 1 && saved <= 7 ? saved : today;
   });
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    saveViewState('agg.anime.day.v1', day);
+  }, [day]);
 
   useEffect(() => {
     let alive = true;

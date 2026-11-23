@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.1.7-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.1.8-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -60,6 +60,8 @@
   Reader 预取下一章/下一集页面。图片/HLS 分片由代理层加 Cache-Control。
 - **分批加载/返回不刷新**：动画源查询每批 6 个；阅读器作为覆盖层渲染，
   底层详情页不卸载，返回保留滚动/数据；Android 返回键可退出全屏阅读。
+- **首页状态记忆**：`packages/ui/src/viewState.ts` 持久化漫画源 tab、小说 tab/分类、
+  动画星期、应用页滚动；AppPage 重新挂载时恢复，避免返回后回到「全部」。
 - **Android 签名**：`apps/android/debug.keystore` 是自用固定 debug 证书，CI 和本地一致，
   APK 可覆盖安装；不要用于正式分发。
 - **Android 更新**：设置 → 关于 → 检查更新，从 GitHub Release 的
@@ -71,7 +73,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.1.7-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.1.8-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

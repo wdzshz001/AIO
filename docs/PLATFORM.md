@@ -117,6 +117,7 @@ UI -> window.agg.proxyUrl(...) -> http://127.0.0.1:port/?u=...&r=...
 - 动画选集自动选源：`packages/ui/src/pages/SubjectPage.tsx`（`playEpisode`）
 - 视频自动播放：`packages/ui/src/components/VideoPlayer.tsx`（`autoPlay`）
 - 内容缓存：`packages/ui/src/contentCache.ts`（IndexedDB，双端共用）
+- 视图状态：`packages/ui/src/viewState.ts`（首页 tab/滚动恢复，双端共用）
 - 预加载：`packages/ui/src/preload.ts`（漫画图片）+ `Reader.tsx`（下一章/下一集）
 - 媒体缓存头：`apps/desktop/src/main.ts`（aggmedia）与 `apps/android/.../MediaProxy.java`
 - 漫画 NSFW 默认值：`packages/adapters/src/sites/mangacopy.ts`（`nsfw: false`）

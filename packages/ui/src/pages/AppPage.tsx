@@ -4,6 +4,7 @@ import Cover from '../components/Cover';
 import AnimeHome from './AnimeHome';
 import NovelHome from './NovelHome';
 import ComicHome from './ComicHome';
+import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
   app: AppDef;
@@ -42,6 +43,23 @@ export default function AppPage({
   const [reloadKey, setReloadKey] = useState(0);
   const [keyword, setKeyword] = useState('');
   const [otherStates, setOtherStates] = useState<Record<string, OtherState>>({});
+
+  // 从书籍/阅读页返回时恢复应用首页滚动位置
+  useEffect(() => {
+    const main = document.querySelector('.main');
+    if (!main) return;
+    const key = `agg.scroll.app.${app.id}`;
+    const saved = Number(loadViewState(key, 0)) || 0;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    if (saved > 0) {
+      timers.push(setTimeout(() => (main.scrollTop = saved), 250));
+      timers.push(setTimeout(() => (main.scrollTop = saved), 1000));
+    }
+    return () => {
+      timers.forEach(clearTimeout);
+      saveViewState(key, main.scrollTop);
+    };
+  }, [app.id, reloadKey]);
 
   /** 小说首页以起点为主，其余书源只在「其他书源」里加载 */
   const otherSites = sites.filter((s) => app.kinds.includes(s.kind) && s.id !== 'qidian');

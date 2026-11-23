@@ -3,6 +3,7 @@ import type { BookSection, Site, SiteCtx } from '@agg/core';
 import Cover from '../components/Cover';
 import { bridge } from '../bridge';
 import { useSites } from '../sites';
+import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
   sites: Site[];
@@ -20,9 +21,18 @@ export default function ComicHome({ sites, ctxFor, onOpenBook }: Props) {
   const { settings, allSites } = useSites();
   const comicSites = useMemo(() => sites.filter((s) => s.kind === 'comic'), [sites]);
   const [states, setStates] = useState<Record<string, SiteState>>({});
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(() => loadViewState('agg.comic.source.v1', 'all'));
   const [reloadKey, setReloadKey] = useState(0);
   const runRef = useRef(0);
+
+  useEffect(() => {
+    saveViewState('agg.comic.source.v1', filter);
+  }, [filter]);
+
+  // 源被关闭/源列表变化时回到「全部」，避免停留在不存在的 tab
+  useEffect(() => {
+    if (filter !== 'all' && !comicSites.some((s) => s.id === filter)) setFilter('all');
+  }, [comicSites, filter]);
 
   const load = useCallback(async () => {
     const id = ++runRef.current;
