@@ -49,6 +49,12 @@ img {
   height: 100%;
 }
 
+/* 阅读器打开时，底层页面保留挂载但不参与绘制，避免顶部标题重影 */
+.app.app-reading > .rail,
+.app.app-reading > .main {
+  visibility: hidden;
+}
+
 .rail {
   width: 68px;
   flex: 0 0 68px;
@@ -838,6 +844,7 @@ img {
 .reader {
   position: fixed;
   inset: 0;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   background: var(--r-bg);
@@ -860,6 +867,26 @@ img {
   color: #fff;
   font-size: 12px;
   backdrop-filter: blur(6px);
+}
+
+.reader-focus-hint {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.38);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  pointer-events: none;
+  animation: focus-hint-fade 3s ease forwards;
+}
+
+@keyframes focus-hint-fade {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .theme-paper {

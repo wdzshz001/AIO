@@ -214,7 +214,7 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       note(`${prefix} sample: ` + textSample);
     }
 
-    await js(`document.querySelector('.reader-exit-focus')?.click()`);
+    await js(`document.querySelector('.reader-scroll')?.click()`);
     await wait(300);
     const nav = await js(`(() => {
       const btns = [...document.querySelectorAll('.reader-nav .ghost-btn')];
@@ -520,7 +520,7 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       await js(`document.querySelector('.hero-actions .primary-btn')?.click()`);
       await until(`document.querySelectorAll('.comic-pages img').length > 0`, 30_000, 'manga-resume');
       await wait(1800);
-      await js(`document.querySelector('.reader-exit-focus')?.click()`);
+      await js(`document.querySelector('.reader-scroll')?.click()`);
       await wait(300);
       const resumePos = await js(`document.querySelector('.reader-pos')?.textContent || ''`);
       note('manga resume pos: ' + resumePos.replace(/\\s+/g, ' '));

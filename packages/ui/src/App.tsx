@@ -502,7 +502,7 @@ export default function App() {
   const activeAppId = 'appId' in pageRoute ? pageRoute.appId : undefined;
 
   return (
-    <div className="app">
+    <div className={'app' + (route.name === 'read' ? ' app-reading' : '')}>
       <aside className="rail">
         <button
           className="rail-logo"

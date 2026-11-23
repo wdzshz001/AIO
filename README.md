@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.1.8-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.1.9-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.1.8-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.1.9-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -100,6 +100,8 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **本地缓存与预加载**：小说正文/漫画章节内容写入 IndexedDB（12 小时），
   重复打开或重启后可命中；阅读时预取下一章，漫画按当前页附近分批预取，
   动画预取下一集页面。设置 → 存储与隐私 可查看/清理内容缓存。
+- **全屏阅读/播放**：小说、漫画、动画阅读页点击中间区域即可隐藏/显示顶栏和底部导航；
+  Android 动画默认横屏全屏，漫画默认全屏。
 - **返回不刷新**：阅读器以覆盖层打开，底层详情页保持挂载；
   从漫画/小说/动画阅读返回时保留滚动位置和已加载内容。
 - **首页状态记忆**：漫画源 tab、小说推荐/分类/排行、动画放送表星期、

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import type { Chapter, ChapterContent, Site, SiteCtx } from '@agg/core';
 import { formatDuration, loadPrefs, savePrefs, type ReaderPrefs } from '../store';
 import {
@@ -365,6 +365,14 @@ export default function Reader({
     if (prefs.autoNext && index < chapters.length - 1) setCountdown(5);
   };
 
+  /** 点击正文/漫画中心区域：隐藏或显示顶栏和底部导航 */
+  const toggleFullscreen = (e: MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, select, textarea, video, .player')) return;
+    if (window.getSelection()?.toString()) return;
+    setFullscreen((v) => !v);
+  };
+
   return (
     <div className={'reader theme-' + prefs.theme + (fullscreen ? ' focus' : '')}>
       {!fullscreen && (
@@ -398,15 +406,7 @@ export default function Reader({
       )}
 
       {fullscreen && (
-        <button
-          className="reader-exit-focus"
-          onClick={() => {
-            setFullscreen(false);
-            if (content?.video) void bridge.setVideoFullscreen?.(false);
-          }}
-        >
-          退出全屏
-        </button>
+        <div className="reader-focus-hint">点击中间显示/隐藏工具栏</div>
       )}
 
       {settingsOpen && (
@@ -447,7 +447,7 @@ export default function Reader({
         </div>
       )}
 
-      <div className="reader-scroll" ref={scrollRef} onScroll={handleScroll}>
+      <div className="reader-scroll" ref={scrollRef} onScroll={handleScroll} onClick={toggleFullscreen}>
         {loading && (
           <div className="loading">
             <span className="spinner" />
