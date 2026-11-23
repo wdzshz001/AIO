@@ -127,6 +127,20 @@ public final class MediaProxy {
                 return;
             }
 
+            // hls.js 从 file:// 页面 XHR 到 127.0.0.1 时可能触发 Private Network/CORS 预检
+            if ("OPTIONS".equalsIgnoreCase(method)) {
+                OutputStream out = s.getOutputStream();
+                out.write("HTTP/1.1 204 No Content\r\n".getBytes(StandardCharsets.ISO_8859_1));
+                writeHeader(out, "Access-Control-Allow-Origin", "*");
+                writeHeader(out, "Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+                writeHeader(out, "Access-Control-Allow-Headers", "Range, Origin, Accept, Content-Type, Cache-Control");
+                writeHeader(out, "Access-Control-Allow-Private-Network", "true");
+                writeHeader(out, "Access-Control-Max-Age", "600");
+                out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
+                out.flush();
+                return;
+            }
+
             Request.Builder rb = new Request.Builder().url(url).header("User-Agent", ua == null || ua.isEmpty() ? UA : ua);
             rb.header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.6");
             if (referer != null && !referer.isEmpty()) rb.header("Referer", referer);
@@ -154,6 +168,9 @@ public final class MediaProxy {
                     writeHeader(out, "Content-Type", "application/vnd.apple.mpegurl; charset=utf-8");
                     writeHeader(out, "Content-Length", String.valueOf(outBytes.length));
                     writeHeader(out, "Access-Control-Allow-Origin", "*");
+                    writeHeader(out, "Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+                    writeHeader(out, "Access-Control-Allow-Headers", "Range, Origin, Accept, Content-Type, Cache-Control");
+                    writeHeader(out, "Access-Control-Allow-Private-Network", "true");
                     writeHeader(out, "Cache-Control", "no-cache");
                     out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     if (!"HEAD".equalsIgnoreCase(method)) out.write(outBytes);
@@ -169,6 +186,10 @@ public final class MediaProxy {
                 String cr = resp.header("Content-Range");
                 if (cr != null) writeHeader(out, "Content-Range", cr);
                 writeHeader(out, "Access-Control-Allow-Origin", "*");
+                writeHeader(out, "Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+                writeHeader(out, "Access-Control-Allow-Headers", "Range, Origin, Accept, Content-Type, Cache-Control");
+                writeHeader(out, "Access-Control-Allow-Private-Network", "true");
+                writeHeader(out, "Access-Control-Expose-Headers", "Content-Length, Content-Range");
                 String cacheControl;
                 if (ctLower.startsWith("image/")) {
                     cacheControl = "public, max-age=604800, immutable";

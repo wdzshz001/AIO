@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.2.2-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.2.3-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -67,7 +67,8 @@
 - **CloudWN 章节缓存**：`BookPage` 详情自带目录优先于旧缓存，缓存 key v3；
   旧版“全一话”缓存不会覆盖新合集。
 - **Android 动画播放**：hls.js 在 Android WebView 关闭 Worker（file:// 下 Worker 易失败）；
-  订阅源原始 JSON 本地缓存兜底；自动选源 Android 单源超时 18s。
+  订阅源原始 JSON 本地缓存兜底；自动选源 Android 单源超时 18s；
+  MediaProxy 支持 OPTIONS/PNA 预检，HLS 代理失败后会直连重试。
 - **首页状态记忆**：`packages/ui/src/viewState.ts` 持久化漫画源 tab、小说 tab/分类、
   动画星期、应用页滚动；AppPage 持续监听滚动事件记录位置，返回后恢复。
 - **Android 签名**：`apps/android/debug.keystore` 是自用固定 debug 证书，CI 和本地一致，
@@ -81,7 +82,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.2.2-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.2.3-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

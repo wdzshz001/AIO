@@ -1,7 +1,7 @@
 {
   "name": "agg-desktop",
   "productName": "聚合阅读",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "description": "聚合阅读：小说、动画、漫画聚合客户端",
   "author": "agg",

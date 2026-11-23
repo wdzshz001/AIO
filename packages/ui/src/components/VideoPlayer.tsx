@@ -96,11 +96,11 @@ export default function VideoPlayer({
     if (!video) return;
     let alive = true;
 
-    const useDirect = attempt >= 2 && kind === 'mp4';
-    const url = useDirect
+    const directFallback = attempt >= 2;
+    const url = directFallback
       ? src
       : proxy(src, referer, userAgent, cookies, attempt > 0 ? Date.now() : undefined);
-    const useHls = kind === 'hls' && !useDirect && Hls.isSupported();
+    const useHls = kind === 'hls' && Hls.isSupported();
 
     const retry = (reason: string) => {
       if (!alive) return;
@@ -137,7 +137,7 @@ export default function VideoPlayer({
     video.addEventListener('error', onNativeError);
 
     if (!useHls) {
-      video.dataset.hlsState = useDirect ? 'direct' : 'native';
+      video.dataset.hlsState = directFallback ? 'direct' : 'native';
       video.src = url;
     } else {
       video.dataset.hlsState = 'hls-init';
