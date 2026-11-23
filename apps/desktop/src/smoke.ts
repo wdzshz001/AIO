@@ -308,6 +308,37 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
       return;
     }
 
+    if (process.env.AGG_SMOKE_ANIME_HEALTH === '1') {
+      await js(`document.querySelector('.rail-settings')?.click()`);
+      await until(`!!document.querySelector('.settings-page')`, 20_000, 'health-settings');
+      await js(`(() => {
+        const b = [...document.querySelectorAll('.settings-link')].find((x) => x.innerText.includes('内容源'));
+        b?.click();
+        return !!b;
+      })()`);
+      await until(`!!document.querySelector('.source-manage-list')`, 30_000, 'health-sources');
+      await js(`(() => {
+        const b = [...document.querySelectorAll('button')].find((x) => x.innerText.trim() === '检测全部');
+        b?.click();
+        return !!b;
+      })()`);
+      const deadline = Date.now() + 150_000;
+      while (Date.now() < deadline) {
+        const checking = await js(`[...document.querySelectorAll('.mini-badge')].some((x) => x.innerText.includes('检测中'))`);
+        if (!checking) break;
+        await wait(1000);
+      }
+      const health = await js(`(() => [...document.querySelectorAll('.source-manage-row')].map((row) => {
+        const name = row.querySelector('.source-manage-name')?.innerText || '';
+        const badges = [...row.querySelectorAll('.mini-badge')].map((x) => ({ text: x.innerText, title: x.title || '' }));
+        return { name, badges };
+      }))()`);
+      note('anime source health: ' + JSON.stringify(health));
+      await shot('anime-source-health');
+      note('ANIME HEALTH DONE');
+      return;
+    }
+
     if (process.env.AGG_SMOKE_CACHE_STATS === '1') {
       const stats = await js(`new Promise((resolve) => {
         const req = indexedDB.open('agg-content-cache');

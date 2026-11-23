@@ -69,7 +69,7 @@ export interface PlaybackSettings {
 const SHELF_KEY = 'agg.shelf.v1';
 const PREFS_KEY = 'agg.reader.v1';
 const SETTINGS_KEY = 'agg.settings.v1';
-const CHAPTERS_KEY = (bookUrl: string) => `agg.chapters.v2:${bookUrl}`;
+const CHAPTERS_KEY = (bookUrl: string) => `agg.chapters.v3:${bookUrl}`;
 const CHAPTERS_TTL = 12 * 60 * 60 * 1000;
 
 /** 应用设置：flightMode 即 UI 上的「飞行模式」，关闭时隐藏被标记的源 */

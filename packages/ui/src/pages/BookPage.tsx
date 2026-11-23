@@ -58,6 +58,14 @@ export default function BookPage({
         if (!alive) return;
         setDetail(d);
 
+        // 详情接口自带的目录优先于旧缓存：CloudWN 合集从“1话”升级为多话时，
+        // 不能让上一版缓存的一话目录继续覆盖新目录。
+        if (d.chapters.length) {
+          setChapters(d.chapters);
+          if (d.chapters.length <= 2000) cacheChapters(url, d.chapters);
+          return;
+        }
+
         const cached = cachedChapters(url);
         if (cached) {
           setChapters(cached);

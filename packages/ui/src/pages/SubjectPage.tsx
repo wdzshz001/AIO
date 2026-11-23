@@ -254,8 +254,15 @@ export default function SubjectPage({
           setLookups((prev) => ({ ...prev, [lookup.siteId]: lookup }));
           consider(lookup);
         },
-        // 每批最多 6 个；首批有候选就立即播放，没候选再补下一批
-        { shouldStop: () => stopped, concurrency: 6, timeoutMs: 8_000 },
+        // 每批最多 6 个；Android WebView 解析详情页更慢，给更宽松的单源超时
+        {
+          shouldStop: () => stopped,
+          concurrency: 6,
+          timeoutMs:
+            (globalThis as { agg?: { platform?: string } }).agg?.platform === 'android'
+              ? 18_000
+              : 12_000,
+        },
       );
 
       void task

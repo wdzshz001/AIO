@@ -5,14 +5,41 @@ import { buildSite, isSupportedByPlatform } from './engine.ts';
 /** animeko 官方在线源订阅 */
 export const DEFAULT_SUBSCRIPTION = 'https://sub.creamycake.org/v1/css1.json';
 
+const SUB_CACHE_KEY = 'agg.subscription.raw.v1';
+
+function readCached(): string {
+  try {
+    return globalThis.localStorage?.getItem(SUB_CACHE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function saveCached(raw: string): void {
+  try {
+    globalThis.localStorage?.setItem(SUB_CACHE_KEY, raw);
+  } catch {
+    /* ignore quota */
+  }
+}
+
 /** 拉订阅并生成 Site 列表；单个源配置有问题只跳过它 */
 export async function loadSubscription(
   bridge: HostBridge,
   url: string = DEFAULT_SUBSCRIPTION,
 ): Promise<Site[]> {
-  const res = await bridge.fetchHtml('subscription', url);
-  const raw = res.html.replace(/^\uFEFF/, '').trim();
-  if (!raw.startsWith('{')) throw new Error('订阅返回的不是 JSON，可能被拦截');
+  let raw = '';
+  try {
+    const res = await bridge.fetchHtml('subscription', url);
+    raw = res.html.replace(/^\uFEFF/, '').trim();
+    if (!raw.startsWith('{')) throw new Error('订阅返回的不是 JSON，可能被拦截');
+    saveCached(raw);
+  } catch (e) {
+    // 网络/验证失败时优先用上一次成功的订阅，避免动画源整组消失
+    const cached = readCached().replace(/^\uFEFF/, '').trim();
+    if (cached.startsWith('{')) raw = cached;
+    else throw e;
+  }
 
   const json = JSON.parse(raw) as SubscriptionFile;
   const version = json.schemaVersion ?? 1;

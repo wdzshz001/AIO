@@ -74,6 +74,8 @@ export default function VideoPlayer({
   const [attempt, setAttempt] = useState(0);
   const attemptRef = useRef(attempt);
   attemptRef.current = attempt;
+  const isAndroid =
+    (globalThis as { agg?: { platform?: string } }).agg?.platform === 'android';
 
   // Android：进入视频页默认横屏全屏，离开时恢复
   useEffect(() => {
@@ -139,7 +141,8 @@ export default function VideoPlayer({
       video.src = url;
     } else {
       video.dataset.hlsState = 'hls-init';
-      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      // Android WebView 的 file:// 页面里 hls.js Worker 容易失败，关闭 Worker 走主线程
+      hls = new Hls({ enableWorker: !isAndroid, lowLatencyMode: false });
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -176,7 +179,7 @@ export default function VideoPlayer({
         video.load();
       }
     };
-  }, [src, kind, referer, userAgent, cookies, attempt, onError, preferredHeight, autoPlay]);
+  }, [src, kind, referer, userAgent, cookies, attempt, onError, preferredHeight, autoPlay, isAndroid]);
 
   useEffect(() => {
     const video = ref.current;
