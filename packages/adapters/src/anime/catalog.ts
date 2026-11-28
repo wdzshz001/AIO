@@ -16,6 +16,7 @@ import {
 } from '@agg/core';
 import type { BangumiEpisode, BangumiSubject } from '../bangumi.ts';
 import { autoMatchOf } from '../subscription/config.ts';
+import { toSimplified } from '../zh.ts';
 
 /**
  * 动画条目服务：把 Bangumi 条目落到各数据源。
@@ -371,8 +372,11 @@ export async function findSourcesByTitle(
       }
       try {
         const refs = await withTimeout(site.search(ctx, title), 25_000, '搜索超时');
+        // 传统书源返回繁体书名时，和简体查询直接算编辑距离会被判成不同作品
+        const queryNames = [title, toSimplified(title)];
+        const comparable = refs.map((ref) => ({ ...ref, title: toSimplified(ref.title) }));
         const best = refs.length
-          ? pickBestTitle(refs, [title], { preferShorterName: true, threshold: 80 })
+          ? pickBestTitle(comparable, queryNames, { preferShorterName: true, threshold: 80 })
           : null;
         if (!best) {
           onUpdate?.(site.id, { status: 'empty' });

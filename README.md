@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.3.1-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.3.2-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.3.1-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.3.2-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -103,8 +103,8 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **繁简转换**：设置 → 阅读与播放可开关「繁体转简体」，默认开启；使用 opencc-js，
   覆盖小说正文、章节名、书籍标题、漫画/动画卡片和最近阅读。
 - **得奇小说网**：正文按滚动分块加载，自动逐屏滚动等待每个区块，过滤“当前章节内容不完整”等反爬提示。
-- **ttks.tw 搜索**：站内精确命中会直接跳详情页；书源会识别这种跳转并返回对应书籍，
-  简体书名搜索也能打开结果。
+- **换源匹配**：换源时标题会先统一做繁→简归一化，再计算同名匹配；
+  ttks.tw 等繁体站的书名不会再因为繁体字被判定为“没有同名作品”。
 - **最近阅读**：动画条目直接按上次集号自动选源播放，不再只打开选源面板；
   动画历史不随某个源被禁用而消失。
 - **路由保存**：小说/动画/漫画都会保存完整返回栈，重启后可回到上次页面；
