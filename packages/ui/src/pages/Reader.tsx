@@ -727,7 +727,7 @@ export default function Reader({
         {content && !loading && content.images && content.images.length > 0 && (
           <div className={'comic-pages comic-' + prefs.comicFit}>
             {content.images.map((src, i) => (
-              <ComicImage key={src + i} src={src} index={i} />
+              <ComicImage key={i} src={src} index={i} />
             ))}
             <p className="comic-end">已显示全部 {content.images.length} 页</p>
           </div>

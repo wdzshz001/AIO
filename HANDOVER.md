@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.4.2-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.4.3-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -68,6 +68,8 @@
   `packages/adapters/src/channels.ts` 定义 `SiteChannel`，qidian/ttks 提供排行和分类，
   其余源复用 `home()` 频道；默认频道配置在 `DEFAULT_CHANNEL_TARGETS`。
 - **路由**：新增 `discover`、`channels(appId)`，左侧栏「发现」、AppPage 右上角「频道」进入。
+- **CloudWN 首屏**：`chapterCloudwn` 用 `onPartial` 先发第一页缩略图，再并行抓分页/原图并按页顺序 emit；
+  不再先等所有分页文档和所有 view 原图。
 - **频道状态记忆**：`ChannelPage` 用 `agg.channels.site/mode/category.*` 持久化源/模式/分类，
   回到频道页恢复；频道页 `.main` 滚动用 `agg.scroll.channels.<appId>`，发现页用 `agg.scroll.discover`。
 - **CloudWN 频道**：`CLOUDWN_CATEGORIES` + `loadCloudwnRank/loadCloudwnCategory`；
@@ -117,7 +119,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.4.2-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.4.3-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

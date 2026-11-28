@@ -280,7 +280,11 @@ async function detailCloudwn(ctx: SiteCtx, url: string): Promise<BookDetail> {
   };
 }
 
-async function chapterCloudwn(ctx: SiteCtx, url: string): Promise<ChapterContent> {
+async function chapterCloudwn(
+  ctx: SiteCtx,
+  url: string,
+  onPartial?: (content: ChapterContent) => void,
+): Promise<ChapterContent> {
   const hit = chapterCache.get(url);
   if (hit && Date.now() - hit.at < TTL) return hit.content;
 
@@ -288,54 +292,90 @@ async function chapterCloudwn(ctx: SiteCtx, url: string): Promise<ChapterContent
   if (!id) throw new Error('无法识别漫画编号');
   const first = await ctx.doc(url);
   const pages = Math.max(maxPage(first, id), 1);
-  const restDocs = await mapLimit(
-    Array.from({ length: Math.max(0, pages - 1) }, (_, i) => i + 2),
-    4,
-    async (page) => ctx.doc(pageUrl(id, page)),
-  );
-  const docs = [first, ...restDocs];
 
-  // 先收集每张缩略图对应的 view 页；view 页里的 #picarea 才是原图
-  const viewLinks: string[] = [];
-  const seenViews = new Set<string>();
-  const thumbs: string[] = [];
-  for (const doc of docs) {
-    for (const href of viewLinksOf(doc)) {
-      if (seenViews.has(href)) continue;
-      seenViews.add(href);
-      viewLinks.push(href);
+  type PageData = { thumbs: string[]; views: string[] };
+  const collect = (doc: Document): PageData => ({
+    thumbs: imagesOf(doc),
+    views: viewLinksOf(doc),
+  });
+  const thumbsByPage = new Map<number, string[]>();
+  const viewsByPage = new Map<number, string[]>();
+  const fullByPage = new Map<number, string[]>();
+  const firstPage = collect(first);
+  thumbsByPage.set(1, firstPage.thumbs);
+  viewsByPage.set(1, firstPage.views);
+
+  const emit = () => {
+    if (!onPartial) return;
+    const images: string[] = [];
+    for (let page = 1; page <= pages; page++) {
+      const full = fullByPage.get(page);
+      const thumbs = thumbsByPage.get(page);
+      if (full?.length) images.push(...full);
+      else if (thumbs?.length) images.push(...thumbs);
+      else break;
     }
-    thumbs.push(...imagesOf(doc));
-  }
+    onPartial({ title: '全一话', paragraphs: [], images });
+  };
 
-  let images: string[];
-  if (viewLinks.length) {
-    const full = await mapLimit(viewLinks, 4, async (viewUrl, index) => {
+  // 第一页缩略图立即可读，不用等所有分页/原图
+  emit();
+
+  const fillFull = async (page: number) => {
+    const views = viewsByPage.get(page) ?? [];
+    const thumbs = thumbsByPage.get(page) ?? [];
+    if (!views.length) {
+      fullByPage.set(page, thumbs);
+      emit();
+      return;
+    }
+    const full = await mapLimit(views, 6, async (viewUrl, index) => {
       try {
         return (await fullImageOf(ctx, viewUrl)) ?? thumbs[index];
       } catch {
         return thumbs[index];
       }
     });
-    images = full.filter((src): src is string => !!src);
-  } else {
-    // 兜底：站点改版时至少还能读缩略图
-    images = thumbs;
-  }
+    fullByPage.set(page, full.filter((src): src is string => !!src));
+    emit();
+  };
 
-  const unique: string[] = [];
+  const restTask = mapLimit(
+    Array.from({ length: Math.max(0, pages - 1) }, (_, i) => i + 2),
+    4,
+    async (page) => {
+      try {
+        const doc = await ctx.doc(pageUrl(id, page));
+        const data = collect(doc);
+        thumbsByPage.set(page, data.thumbs);
+        viewsByPage.set(page, data.views);
+        emit();
+        await fillFull(page);
+      } catch {
+        // 单页失败不拖垮其他页
+      }
+    },
+  );
+
+  await Promise.all([fillFull(1), restTask]);
+
+  const images: string[] = [];
   const seen = new Set<string>();
-  for (const src of images) {
-    if (!src || seen.has(src)) continue;
-    seen.add(src);
-    unique.push(src);
+  for (let page = 1; page <= pages; page++) {
+    const list = fullByPage.get(page) ?? thumbsByPage.get(page) ?? [];
+    for (const src of list) {
+      if (!src || seen.has(src)) continue;
+      seen.add(src);
+      images.push(src);
+    }
   }
-  if (!unique.length) throw new Error('这一话没有解析到图片，可能需要先在站点内验证');
+  if (!images.length) throw new Error('这一话没有解析到图片，可能需要在站点内验证');
 
-  const content: ChapterContent = { title: '全一话', paragraphs: [], images: unique };
+  const content: ChapterContent = { title: '全一话', paragraphs: [], images };
   chapterCache.set(url, { at: Date.now(), content });
   return content;
 }
+
 
 const cloudwn: Site = {
   id: 'cloudwn',
