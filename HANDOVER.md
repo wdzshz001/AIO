@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.2.8-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.3.0-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -61,10 +61,13 @@
 - **阅读全屏**：小说/漫画点击阅读器中心切换工具栏；漫画默认全屏。
 - **Android 动画全屏**：默认不横屏；点全屏图标后调用原生 `setVideoFullscreen(true)`
   横屏，退出恢复。全屏控制层默认隐藏，点击视频/空白唤出上一集、下一集、退出按钮 3 秒。
-- **全屏播放**：Android 原生播放器全屏按钮通过 `__aggToggleVideoFullscreen` 切换应用内全屏；
-  进入先显示 4 秒上下集控制层，右上角常驻退出按钮，点中心再唤出。
-- **漫画缓存兼容**：`contentCache` 读出时用 u/r 参数重新生成当前端口的 Android 代理地址，
-  修复升级/重启后旧缓存图片全部失效。
+- **繁简转换**：`packages/ui/src/chinese.ts` 使用 opencc-js（t→cn），默认开启；
+  ReaderPrefs `t2s` 可关；正文/章节/书籍/卡片/最近阅读统一 `displayText()`。
+- **得奇小说网**：渲染滚动改为逐屏触发区块加载，`stripDeqixssNoise` 清理
+  “当前章节内容不完整”/“加载中”等占位符；正文缓存 key 升 v2。
+- **ttks.tw**：`packages/adapters/src/sites/ttks.ts`，需真实浏览器渲染；
+  Cloudflare 通过隐藏浏览器会话处理，正文取 `div.content p[data-num]` 并清广告水印。
+- **动画全屏**：原生播放器全屏按钮是开关式，进入显示上下集控制层，右上角退出按钮常驻。
 - **最近阅读**：动画条目 `autoPlay` 走 `playEpisode` 自动选源，旧书架缺 `sort` 时从标题补；
   动画历史按 `subjectId` 显示，不依赖某个源是否启用。
 - **全屏底栏**：非全屏时固定视口底部；全屏时位于正文末尾，滚到底出现。
@@ -99,7 +102,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.2.8-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.3.0-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

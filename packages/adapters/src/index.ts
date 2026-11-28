@@ -3,6 +3,7 @@ import shuba69 from './sites/shuba69.ts';
 import trxs from './sites/trxs.ts';
 import qidian from './sites/qidian.ts';
 import deqixss from './sites/deqixss.ts';
+import ttks from './sites/ttks.ts';
 import cloudwn from './sites/cloudwn.ts';
 import mycomic from './sites/mycomic.ts';
 import mangacopy from './sites/mangacopy.ts';
@@ -11,7 +12,7 @@ import mangacopy from './sites/mangacopy.ts';
  * 静态站点：起点 / 得奇小说 / 小说站 / 三个漫画源。
  * 动画源全部来自 animeko 在线源订阅（运行时加载），见 subscription/loader.ts。
  */
-export const sites: Site[] = [qidian, deqixss, shuba69, trxs, cloudwn, mycomic, mangacopy];
+export const sites: Site[] = [qidian, deqixss, ttks, shuba69, trxs, cloudwn, mycomic, mangacopy];
 
 /**
  * 应用注册表：用户只面对应用，站点在应用内部聚合。

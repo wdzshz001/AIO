@@ -3,6 +3,7 @@ import type { AppDef } from '@agg/core';
 import { formatDuration, formatTime, type ShelfEntry } from '../store';
 import { addSearchHistory, clearSearchHistory, loadSearchHistory } from '../searchHistory';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 
 interface Props {
   apps: AppDef[];
@@ -40,11 +41,10 @@ function progressOf(entry: ShelfEntry): { ratio: number; text: string } {
 
 function chapterText(entry: ShelfEntry): string {
   const title = entry.chapter?.title;
-  if (!title) return '未开始';
-  if ((entry.subjectId || entry.kind === 'anime') && /^\d+$/.test(title)) {
+  if (!title) return '未开始';  if ((entry.subjectId || entry.kind === 'anime') && /^\d+$/.test(title)) {
     return `第 ${Number(title)} 集`;
   }
-  return title;
+  return displayText(title);
 }
 
 export default function Launcher({ apps, shelf, blurCovers, onOpenApp, onOpenEntry, onSearch }: Props) {
@@ -142,7 +142,7 @@ export default function Launcher({ apps, shelf, blurCovers, onOpenApp, onOpenEnt
           />
           <span className="continue-copy">
             <span className="continue-kicker">继续{kindLabel(latest)}</span>
-            <span className="continue-title">{latest.title}</span>
+            <span className="continue-title">{displayText(latest.title)}</span>
             <span className="continue-chapter">
               {chapterText(latest)}
             </span>
@@ -206,7 +206,7 @@ export default function Launcher({ apps, shelf, blurCovers, onOpenApp, onOpenEnt
                     title={item.title}
                     className={'recent-cover' + (blurCovers ? ' blurred' : '')}
                   />
-                  <span className="recent-title">{item.title}</span>
+                  <span className="recent-title">{displayText(item.title)}</span>
                   <span className="recent-chapter">{chapterText(item)}</span>
                   <span className="recent-bar">
                     <span style={{ width: `${Math.max(3, p.ratio * 100)}%` }} />

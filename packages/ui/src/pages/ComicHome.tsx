@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookSection, Site, SiteCtx } from '@agg/core';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 import { bridge } from '../bridge';
 import { useSites } from '../sites';
 import { loadViewState, saveViewState } from '../viewState';
@@ -183,9 +184,9 @@ export default function ComicHome({ sites, ctxFor, onOpenBook }: Props) {
                       className="book-card"
                       onClick={() => onOpenBook(site.id, book.url)}
                     >
-                      <Cover src={book.cover} title={book.title} className="book-cover" />
-                      <span className="book-title">{book.title}</span>
-                      {book.extra && <span className="book-author">{book.extra}</span>}
+                      <Cover src={book.cover} title={displayText(book.title)} className="book-cover" />
+                      <span className="book-title">{displayText(book.title)}</span>
+                      {book.extra && <span className="book-author">{displayText(book.extra)}</span>}
                     </button>
                   ))}
                 </div>

@@ -9,6 +9,7 @@ import {
 import type { Site, SiteCtx } from '@agg/core';
 import { normalizeTitle } from '@agg/core';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 import { bridge } from '../bridge';
 import type { ShelfEntry } from '../store';
 
@@ -396,8 +397,8 @@ export default function SubjectPage({
     );
   }
 
-  const title = subject.nameCn || subject.name;
-  const subtitle = subject.nameCn && subject.name !== subject.nameCn ? subject.name : '';
+  const title = displayText(subject.nameCn || subject.name);
+  const subtitle = subject.nameCn && subject.name !== subject.nameCn ? displayText(subject.name) : '';
 
   return (
     <div className="page subject-page">
@@ -440,7 +441,7 @@ export default function SubjectPage({
               className={'hero-intro' + (introOpen ? ' open' : '')}
               onClick={() => setIntroOpen((v) => !v)}
             >
-              {subject.summary}
+              {displayText(subject.summary)}
             </p>
           )}
           <div className="hero-actions">
@@ -495,7 +496,7 @@ export default function SubjectPage({
                     title={name ? `第${code}集 ${name}` : `第${code}集`}
                   >
                     <span className="episode-num">{code}</span>
-                    {name && <span className="episode-name">{name}</span>}
+                    {name && <span className="episode-name">{displayText(name)}</span>}
                     {seen && <span className="episode-seen">✓</span>}
                   </button>
                 );
@@ -519,7 +520,7 @@ export default function SubjectPage({
                 <h2>
                   第{pickerEpisode ? episodeCode(pickerEpisode) : ''}集
                   {pickerEpisode && episodeName(pickerEpisode)
-                    ? ` · ${episodeName(pickerEpisode)}`
+                    ? ` · ${displayText(episodeName(pickerEpisode))}`
                     : ''}
                 </h2>
                 <p className="muted">
@@ -551,7 +552,7 @@ export default function SubjectPage({
                       <span className="source-main">
                         <span className="source-name">{c.siteName}</span>
                         {c.channel && <span className="source-channel">{c.channel}</span>}
-                        <span className="source-title">{c.title}</span>
+                        <span className="source-title">{displayText(c.title)}</span>
                       </span>
                       <span className="source-meta">
                         {c.sort ? `第${c.sort}集` : c.chapters[c.index]?.title}

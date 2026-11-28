@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { BookDetail, Chapter, Site, SiteCtx } from '@agg/core';
 import { findSourcesByTitle } from '@agg/adapters';
 import Cover from '../components/Cover';
-import { cacheChapters, cachedChapters, loadShelf } from '../store';
+import { cacheChapters, cachedChapters, loadPrefs, loadShelf } from '../store';
+import { toSimplified } from '../chinese';
 
 interface Props {
   site: Site;
@@ -33,6 +34,9 @@ export default function BookPage({
   const [note, setNote] = useState('');
   const [chaptersLoading, setChaptersLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [t2s] = useState(() => loadPrefs().t2s);
+  const tr = (value: string | undefined | null) =>
+    t2s ? toSimplified(value ?? '') : (value ?? '');
   const [filter, setFilter] = useState('');
   const [shown, setShown] = useState(PAGE);
   const [introOpen, setIntroOpen] = useState(false);
@@ -172,8 +176,8 @@ export default function BookPage({
             ←
           </button>
           <div className="head-title-wrap">
-            <h1>{detail?.title ?? '加载中…'}</h1>
-            {detail?.author && <p className="muted">{detail.author}</p>}
+            <h1>{detail ? tr(detail.title) : '加载中…'}</h1>
+            {detail?.author && <p className="muted">{tr(detail.author)}</p>}
           </div>
         </div>
         <div className="head-actions">
@@ -260,7 +264,7 @@ export default function BookPage({
             <span className="hero-cover placeholder">{detail.title.slice(0, 1)}</span>
           )}
           <div className="hero-info">
-            <h2>{detail.title}</h2>
+            <h2>{tr(detail.title)}</h2>
             <p className="muted">
               {detail.author ?? '佚名'}
               {detail.status ? ` · ${detail.status}` : ''}
@@ -268,7 +272,7 @@ export default function BookPage({
             </p>
             {detail.intro && (
               <p className={'hero-intro' + (introOpen ? ' open' : '')} onClick={() => setIntroOpen((v) => !v)}>
-                {detail.intro}
+                {tr(detail.intro)}
               </p>
             )}
             {site.id === 'qidian' && (
@@ -342,7 +346,7 @@ export default function BookPage({
                     onClick={() => onRead(detail!, chapters, idx)}
                     title={c.locked ? '起点付费章节，建议换源阅读' : undefined}
                   >
-                    {c.title}
+                    {tr(c.title)}
                     {c.locked && <span className="chapter-vip">VIP</span>}
                   </button>
                 );

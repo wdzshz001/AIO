@@ -161,6 +161,16 @@ const chapterCache = new Map<string, { at: number; content: ChapterContent }>();
 const NOISE =
   /当前章节|本章节内容|本章内容|加载中|点击催更|速读谷|shudugu|看最新|退出阅读模式|章节内容不完整|更新不易|请订阅|本章节未完/i;
 
+function stripDeqixssNoise(paragraph: string): string {
+  let text = paragraph.replace(/\u00a0/g, ' ').trim();
+  // 站点会把提示拆成“当&前@章#节…”，按真实起始位置截掉提示
+  const hint = /当[&@#$%^~!_|;)(*]*前[&@#$%^~!_|;)(*]*章[&@#$%^~!_|;)(*]*节[&@#$%^~!_|;)(*]*内[&@#$%^~!_|;)(*]*容[&@#$%^~!_|;)(*]*不[&@#$%^~!_|;)(*]*完[&@#$%^~!_|;)(*]*整/;
+  const match = hint.exec(text);
+  if (match) text = text.slice(0, match.index);
+  if (/^加载中[.…。]*$/.test(text)) return '';
+  return text.trim();
+}
+
 function pageUrl(url: string, page: number): string {
   const u = new URL(url);
   u.searchParams.set('page', String(page));
@@ -175,11 +185,13 @@ function totalPagesOf(title: string): number {
 function paragraphsOf(doc: Document): string[] {
   const root = qs(doc, '#chapter-content') ?? qs(doc, '.readcontent');
   const paragraphs = toParagraphs(root)
+    .map(stripDeqixssNoise)
     .filter((p) => !NOISE.test(p))
     .map((p) => p.replace(/\u00a0/g, ' ').trim())
     .filter(Boolean);
   if (paragraphs.length) return paragraphs;
   return toParagraphs(qs(doc, '.readcontent'))
+    .map(stripDeqixssNoise)
     .filter((p) => !NOISE.test(p))
     .filter(Boolean);
 }

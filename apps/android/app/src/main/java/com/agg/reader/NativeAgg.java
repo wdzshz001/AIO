@@ -347,7 +347,13 @@ public final class NativeAgg {
     }
 
     private void doScroll(WebView v, Runnable after) {
-        String js = "(async()=>{for(let i=0;i<8;i++){window.scrollTo(0,document.body.scrollHeight);await new Promise(r=>setTimeout(r,350));}window.scrollTo(0,0);return 'ok';})()";
+        String js =
+                "(async()=>{const H=()=>Math.max(document.body.scrollHeight,document.documentElement.scrollHeight);"
+                        + "const step=Math.max(420,Math.floor(window.innerHeight*0.8));let lastH=0;"
+                        + "for(let i=0;i<80;i++){const h=H();const y=Math.min(h,Math.floor((i+1)*step));"
+                        + "window.scrollTo(0,y);await new Promise(r=>setTimeout(r,300));"
+                        + "if(y>=h-2&&h===lastH)break;lastH=h;}"
+                        + "await new Promise(r=>setTimeout(r,1600));window.scrollTo(0,0);return 'ok';})()";
         v.evaluateJavascript(js, ignored -> main.postDelayed(after, 800));
     }
 

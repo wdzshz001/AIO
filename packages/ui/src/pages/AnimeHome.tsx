@@ -7,6 +7,7 @@ import {
   getBangumiTrending,
 } from '@agg/adapters';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 import { bridge } from '../bridge';
 import { loadViewState, saveViewState } from '../viewState';
 
@@ -59,10 +60,10 @@ function SubjectGrid({
           title="查看详情"
         >
           <div className="card-cover-wrap">
-            <Cover src={s.cover} title={s.nameCn || s.name} className="book-cover" />
+            <Cover src={s.cover} title={displayText(s.nameCn || s.name)} className="book-cover" />
             {showScore && s.score ? <span className="score-badge">{s.score.toFixed(1)}</span> : null}
           </div>
-          <span className="book-title">{s.nameCn || s.name}</span>
+          <span className="book-title">{displayText(s.nameCn || s.name)}</span>
           <span className="book-author">
             {[s.date?.slice(0, 7), s.score ? `${s.score} 分` : ''].filter(Boolean).join(' · ') || '动画'}
           </span>

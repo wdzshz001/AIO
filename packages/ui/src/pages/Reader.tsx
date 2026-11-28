@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import type { Chapter, ChapterContent, Site, SiteCtx } from '@agg/core';
 import { formatDuration, loadPrefs, savePrefs, type ReaderPrefs } from '../store';
+import { toSimplified } from '../chinese';
 import {
   getContentCache,
   contentCacheKey,
@@ -153,6 +154,8 @@ export default function Reader({
 
   const chapter = chapters[index];
   const startAt = index === firstIndexRef.current ? initialPosition : undefined;
+  const tr = (value: string | undefined | null) =>
+    prefs.t2s ? toSimplified(value ?? '') : (value ?? '');
 
   // 漫画/全屏阅读时隐藏系统栏（Android 由原生桥实现，桌面端忽略）
   useEffect(() => {
@@ -498,8 +501,8 @@ export default function Reader({
             ←
           </button>
           <div className="reader-head-title">
-            <span className="reader-book">{title}</span>
-            <span className="reader-chapter">{prettyTitle(chapter?.title ?? '')}</span>
+            <span className="reader-book">{tr(title)}</span>
+            <span className="reader-chapter">{prettyTitle(tr(chapter?.title ?? ''))}</span>
           </div>
           {site.kind === 'comic' && (
             <button
@@ -561,7 +564,7 @@ export default function Reader({
           </button>
           <div className="video-fs-meta">
             <span>{title}</span>
-            <span>{prettyTitle(chapter?.title ?? '')}</span>
+            <span>{prettyTitle(tr(chapter?.title ?? ''))}</span>
           </div>
           <button
             disabled={index >= chapters.length - 1}
@@ -669,7 +672,7 @@ export default function Reader({
               onError={setPlayError}
             />
             <p className="reader-video-title">
-              {prettyTitle(chapter?.title || content.title || '')}
+              {prettyTitle(tr(chapter?.title || content.title || ''))}
               {startAt && startAt > 3 ? ` · 从 ${formatDuration(startAt)} 续播` : ''}
             </p>
 
@@ -703,9 +706,9 @@ export default function Reader({
               ['--para-gap' as string]: prefs.paragraphGap + 'px',
             }}
           >
-            <h1 className="reader-h1">{prettyTitle(content.title || chapter?.title || '')}</h1>
+            <h1 className="reader-h1">{prettyTitle(tr(content.title || chapter?.title || ''))}</h1>
             {content.paragraphs.map((p, i) => (
-              <p key={i}>{p}</p>
+              <p key={i}>{tr(p)}</p>
             ))}
             {content.streaming && <p className="reader-streaming">正在加载后续内容…</p>}
           </article>

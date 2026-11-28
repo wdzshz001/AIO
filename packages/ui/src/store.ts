@@ -32,6 +32,8 @@ export interface ReaderPrefs {
   /** 播完自动下一集（与 animeko 的 autoPlayNext 对齐，默认关） */
   autoNext: boolean;
   comicFit: 'width' | 'contain';
+  /** 繁體轉簡體（默认开启） */
+  t2s: boolean;
 }
 
 export interface AppearanceSettings {
@@ -324,6 +326,7 @@ export function loadPrefs(): ReaderPrefs {
     theme: 'paper',
     autoNext: false,
     comicFit: 'width',
+    t2s: true,
   };
   const p = read<Partial<ReaderPrefs>>(PREFS_KEY, {});
   return {
@@ -334,6 +337,7 @@ export function loadPrefs(): ReaderPrefs {
     theme: p.theme === 'night' || p.theme === 'green' ? p.theme : 'paper',
     autoNext: p.autoNext === true,
     comicFit: p.comicFit === 'contain' ? 'contain' : 'width',
+    t2s: p.t2s !== false,
   };
 }
 

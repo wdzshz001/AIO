@@ -8,6 +8,7 @@ import {
   loadQidianRank,
 } from '@agg/adapters';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
@@ -41,10 +42,10 @@ function BookGrid({
           onClick={() => onOpen('qidian', b.url)}
           title={b.intro || b.title}
         >
-          <Cover src={b.cover} title={b.title} className="book-cover" />
-          <span className="book-title">{b.title}</span>
+          <Cover src={b.cover} title={displayText(b.title)} className="book-cover" />
+          <span className="book-title">{displayText(b.title)}</span>
           <span className="book-author">
-            {[b.author, b.extra].filter(Boolean).join(' · ') || '起点中文网'}
+            {[displayText(b.author), displayText(b.extra)].filter(Boolean).join(' · ') || '起点中文网'}
           </span>
         </button>
       ))}
@@ -64,10 +65,10 @@ function Sections({
   return (
     <>
       {sections.map((s) => (
-        <section className="section" key={s.title}>
+        <section className="section" key={displayText(s.title)}>
           <div className="home-section-head">
             <h2 className="section-title">
-              {s.title}
+              {displayText(s.title)}
               <span className="group-count">{s.books.length}</span>
             </h2>
             {s.moreUrl && (

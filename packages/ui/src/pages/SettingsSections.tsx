@@ -444,6 +444,13 @@ function ReaderSettings({ onBack }: SectionProps) {
         <Field label="正文宽度">
           <Range value={prefs.pageWidth} min={560} max={1000} step={20} suffix="px" onChange={(v) => patchPrefs({ pageWidth: v })} />
         </Field>
+        <Field label="繁体转简体" desc="默认开启，把繁体中文转换为简体；仅影响显示，不改动源数据">
+          <Toggle
+            checked={prefs.t2s}
+            onChange={(v) => patchPrefs({ t2s: v })}
+            label="繁体转简体"
+          />
+        </Field>
         <Field label="阅读主题">
           <Segmented
             value={prefs.theme}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AppDef, BookSection, Site, SiteCtx } from '@agg/core';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 import AnimeHome from './AnimeHome';
 import NovelHome from './NovelHome';
 import ComicHome from './ComicHome';
@@ -247,9 +248,9 @@ export default function AppPage({
                             className="book-card"
                             onClick={() => onOpenBook(site.id, book.url)}
                           >
-                            <Cover src={book.cover} title={book.title} className="book-cover" />
-                            <span className="book-title">{book.title}</span>
-                            {book.extra && <span className="book-author">{book.extra}</span>}
+                            <Cover src={book.cover} title={displayText(book.title)} className="book-cover" />
+                            <span className="book-title">{displayText(book.title)}</span>
+                            {book.extra && <span className="book-author">{displayText(book.extra)}</span>}
                           </button>
                         ))}
                       </div>

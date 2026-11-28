@@ -7,6 +7,7 @@ import {
   type BangumiSubject,
 } from '@agg/adapters';
 import Cover from '../components/Cover';
+import { displayText } from '../chinese';
 import { bridge } from '../bridge';
 import { addSearchHistory, clearSearchHistory, loadSearchHistory } from '../searchHistory';
 import { useSites } from '../sites';
@@ -198,9 +199,9 @@ export default function SearchPage({
           className="book-card"
           onClick={() => onOpenBook(item.siteId, item.book.url)}
         >
-          <Cover src={item.book.cover} title={item.book.title} className="book-cover" />
-          <span className="book-title">{item.book.title}</span>
-          {item.book.extra && <span className="book-author">{item.book.extra}</span>}
+          <Cover src={item.book.cover} title={displayText(item.book.title)} className="book-cover" />
+          <span className="book-title">{displayText(item.book.title)}</span>
+          {item.book.extra && <span className="book-author">{displayText(item.book.extra)}</span>}
         </button>
       ))}
     </div>
@@ -210,8 +211,8 @@ export default function SearchPage({
     <div className="subject-grid">
       {list.map((s) => (
         <button key={s.id} className="subject-card" onClick={() => onOpenSubject(s.id)}>
-          <Cover src={s.cover} title={s.nameCn || s.name} className="book-cover" />
-          <span className="book-title">{s.nameCn || s.name}</span>
+          <Cover src={s.cover} title={displayText(s.nameCn || s.name)} className="book-cover" />
+          <span className="book-title">{displayText(s.nameCn || s.name)}</span>
           <span className="book-author">
             {[s.date?.slice(0, 7), s.score ? `${s.score} 分` : ''].filter(Boolean).join(' · ') || '动画'}
           </span>
