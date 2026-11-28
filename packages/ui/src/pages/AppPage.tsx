@@ -13,6 +13,7 @@ interface Props {
   ctxFor: (siteId: string) => SiteCtx | null;
   onOpenBook: (siteId: string, url: string) => void;
   onOpenSubject?: (subjectId: number) => void;
+  onOpenChannels?: () => void;
   onSearch?: (query: string, category: string) => void;
   onBack: () => void;
   loadingSources?: boolean;
@@ -32,6 +33,7 @@ export default function AppPage({
   ctxFor,
   onOpenBook,
   onOpenSubject,
+  onOpenChannels,
   onSearch,
   onBack,
   loadingSources,
@@ -160,6 +162,13 @@ export default function AppPage({
         <button className="icon-btn" onClick={() => setReloadKey((k) => k + 1)} title="刷新">
           ↻
         </button>
+        {onOpenChannels && (
+          <button className="icon-btn channel-entry" onClick={onOpenChannels} title="频道浏览" aria-label="频道浏览">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16M4 12h16M4 19h16" />
+            </svg>
+          </button>
+        )}
       </header>
 
       <div className="app-search">

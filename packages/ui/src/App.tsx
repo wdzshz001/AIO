@@ -25,6 +25,8 @@ import BookPage from './pages/BookPage';
 import Reader from './pages/Reader';
 import SearchPage from './pages/SearchPage';
 import SubjectPage from './pages/SubjectPage';
+import DiscoverPage from './pages/DiscoverPage';
+import ChannelPage from './pages/ChannelPage';
 import SettingsPage from './pages/SettingsPage';
 import NsfwSourcesPage from './pages/NsfwSourcesPage';
 import SettingsSectionPage from './pages/SettingsSections';
@@ -35,6 +37,8 @@ export type Route =
   | { name: 'home' }
   | { name: 'search'; query: string; category?: string }
   | { name: 'app'; appId: string }
+  | { name: 'discover' }
+  | { name: 'channels'; appId: string }
   | { name: 'settings' }
   | { name: 'settings-nsfw' }
   | { name: 'settings-section'; section: SettingsSection }
@@ -61,7 +65,7 @@ function initialRoute(): Route {
   if (settings.startup.page === 'last') {
     try {
       const saved = JSON.parse(localStorage.getItem('agg.lastRoute.v1') || 'null') as Route | null;
-      if (saved && ['home', 'app', 'book', 'subject', 'search'].includes(saved.name)) return saved;
+      if (saved && ['home', 'app', 'discover', 'channels', 'book', 'subject', 'search'].includes(saved.name)) return saved;
     } catch {
       /* ignore */
     }
@@ -73,7 +77,7 @@ function initialRoute(): Route {
   return { name: 'home' };
 }
 
-const RESTORABLE_ROUTES = ['home', 'app', 'book', 'subject', 'search'];
+const RESTORABLE_ROUTES = ['home', 'app', 'discover', 'channels', 'book', 'subject', 'search'];
 
 function isRestorableRoute(value: unknown): value is Route {
   if (!value || typeof value !== 'object') return false;
@@ -252,7 +256,7 @@ export default function App() {
 
   // 记录可恢复的页面
   useEffect(() => {
-    if (['home', 'app', 'book', 'subject', 'search'].includes(route.name)) {
+    if (['home', 'app', 'discover', 'channels', 'book', 'subject', 'search'].includes(route.name)) {
       localStorage.setItem('agg.lastRoute.v1', JSON.stringify(route));
     }
     // 保存整条返回栈；阅读器路由不落盘（内容/章节表太大，进度由书架负责）
@@ -569,6 +573,14 @@ export default function App() {
         >
           <HomeIcon />
         </button>
+        <button
+          className={'rail-discover' + (pageRoute.name === 'discover' || pageRoute.name === 'channels' ? ' active' : '')}
+          title="发现"
+          aria-label="发现"
+          onClick={() => push({ name: 'discover' })}
+        >
+          发现
+        </button>
         <div className="rail-apps">
           <button
             className={'rail-app' + (pageRoute.name === 'search' ? ' rail-search-active' : '')}
@@ -619,6 +631,28 @@ export default function App() {
           />
         )}
 
+        {pageRoute.name === 'discover' && (
+          <DiscoverPage
+            sites={sites}
+            ctxFor={ctxFor}
+            onOpenBook={(siteId, bookUrl) => push({ name: 'book', siteId, url: bookUrl })}
+            onOpenSubject={(subjectId) => push({ name: 'subject', subjectId })}
+            onOpenChannels={(appId) => push({ name: 'channels', appId })}
+            onBack={back}
+          />
+        )}
+
+        {pageRoute.name === 'channels' && (
+          <ChannelPage
+            appId={pageRoute.appId}
+            sites={sites}
+            ctxFor={ctxFor}
+            onOpenBook={(siteId, bookUrl) => push({ name: 'book', siteId, url: bookUrl })}
+            onOpenSubject={(subjectId) => push({ name: 'subject', subjectId })}
+            onBack={back}
+          />
+        )}
+
         {pageRoute.name === 'search' && (
           <SearchPage
             initialQuery={pageRoute.query}
@@ -658,6 +692,7 @@ export default function App() {
                 ctxFor={ctxFor}
                 onOpenBook={(siteId, url) => push({ name: 'book', siteId, url })}
                 onOpenSubject={(subjectId) => push({ name: 'subject', subjectId })}
+                onOpenChannels={() => push({ name: 'channels', appId: pageRoute.appId })}
                 onSearch={(query, category) => push({ name: 'search', query, category })}
                 onBack={back}
               />

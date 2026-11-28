@@ -2191,6 +2191,145 @@ img {
   justify-content: flex-end;
 }
 
+.channel-entry svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.rail-discover {
+  width: 42px;
+  margin: 10px auto 0;
+  padding: 7px 0;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.rail-discover.active,
+.rail-discover:hover {
+  color: var(--text);
+  border-color: rgba(79, 140, 255, 0.55);
+  background: rgba(79, 140, 255, 0.12);
+}
+
+.discover-page .source-status {
+  margin-bottom: 18px;
+}
+
+.discover-source-group {
+  margin-bottom: 36px;
+}
+
+.discover-source-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.discover-source-head h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+}
+
+.discover-source-head p {
+  margin: 0;
+}
+
+.discover-channel {
+  margin-bottom: 22px;
+}
+
+.discover-channel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.discover-channel-head h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.discover-channel-head span {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.channel-scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 10px;
+  scrollbar-width: thin;
+}
+
+.channel-book {
+  flex: 0 0 126px;
+  width: 126px;
+}
+
+.channel-source-tabs,
+.channel-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.channel-mode-tabs {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.channel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.channel-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.channel-block-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.channel-block-head span {
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
+
+@media (max-width: 720px) {
+  .channel-book {
+    flex-basis: 112px;
+    width: 112px;
+  }
+
+  .discover-source-head h2 {
+    font-size: 17px;
+  }
+}
+
 .icon-btn.tiny {
   width: 24px;
   height: 24px;

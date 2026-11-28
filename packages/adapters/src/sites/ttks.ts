@@ -170,6 +170,38 @@ async function detailTtks(ctx: SiteCtx, url: string): Promise<BookDetail> {
 
 const chapterCache = new Map<string, { at: number; content: ChapterContent }>();
 
+export const TTKS_CATEGORIES = [
+  { id: 'dushi', name: '都市' },
+  { id: 'wuxia', name: '武侠' },
+  { id: 'yaniqng', name: '言情' },
+  { id: 'youxi', name: '游戏' },
+  { id: 'kehuan', name: '科幻' },
+  { id: 'kongbu', name: '悬疑' },
+  { id: 'xuanhuan', name: '玄幻' },
+  { id: 'lishi', name: '历史' },
+  { id: 'tongren', name: '同人' },
+  { id: 'qita', name: '其它' },
+];
+
+/** 排行频道：页面结构可能调整，用统一的“书籍链接”解析兜底 */
+export async function loadTtksRank(ctx: SiteCtx): Promise<BookSection[]> {
+  const url = `${BASE}/novel/rank`;
+  const doc = await ctx.doc(url);
+  const books = parseLinks(doc);
+  return books.length ? [{ title: '综合排行', books, moreUrl: url }] : [];
+}
+
+export async function loadTtksCategory(
+  ctx: SiteCtx,
+  id: string,
+  name: string,
+): Promise<BookSection[]> {
+  const url = `${BASE}/novel/class/${id}`;
+  const doc = await ctx.doc(url);
+  const books = parseLinks(doc);
+  return books.length ? [{ title: `${name} · 分类`, books, moreUrl: url }] : [];
+}
+
 function chapterParagraphs(doc: Document): string[] {
   const root = qs(doc, 'div.content');
   if (!root) return [];

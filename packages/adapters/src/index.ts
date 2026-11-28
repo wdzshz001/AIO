@@ -85,3 +85,13 @@ export {
   loadQidianList,
 } from './sites/qidian.ts';
 export { isSupportedByPlatform } from './subscription/engine.ts';
+export {
+  DEFAULT_CHANNEL_TARGETS,
+  channelCategories,
+  hasRankChannels,
+  loadCategoryChannels,
+  loadRankChannels,
+  loadRecommendChannels,
+  type ChannelMode,
+  type SiteChannel,
+} from './channels.ts';
