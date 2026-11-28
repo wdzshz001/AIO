@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppDef, BookRef, Site, SiteCtx } from '@agg/core';
 import {
   channelCategories,
@@ -17,6 +17,7 @@ import {
 import Cover from '../components/Cover';
 import { displayText } from '../chinese';
 import { bridge } from '../bridge';
+import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
   appId: string;
@@ -150,30 +151,90 @@ export default function ChannelPage({
     () => (app ? sitesOfApp(app, sites).filter((s) => !!s.home) : []),
     [app, sites],
   );
-  const [siteId, setSiteId] = useState(() => appSites[0]?.id ?? '');
-  const [mode, setMode] = useState<ChannelMode>('recommend');
+  const [siteId, setSiteId] = useState('');
+  const [mode, setMode] = useState<ChannelMode>(() => {
+    const saved = loadViewState<ChannelMode>(`agg.channels.mode.${appId}`, 'recommend');
+    return saved === 'rank' || saved === 'category' ? saved : 'recommend';
+  });
   const [categoryId, setCategoryId] = useState('');
   const [channels, setChannels] = useState<SiteChannel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const mainScrollRef = useRef(0);
 
   const site = appSites.find((s) => s.id === siteId);
   const categories = site ? channelCategories(site) : [];
   const canRank = site ? hasRankChannels(site) : false;
   const canCategory = categories.length > 0;
 
+  // 从书籍/阅读页返回时恢复频道页选择的源
+  useEffect(() => {
+    if (siteId && appSites.some((s) => s.id === siteId)) return;
+    const saved = loadViewState(`agg.channels.site.${appId}`, '');
+    setSiteId(appSites.some((s) => s.id === saved) ? saved : (appSites[0]?.id ?? ''));
+  }, [appId, appSites, siteId]);
+
+  useEffect(() => {
+    if (siteId) saveViewState(`agg.channels.site.${appId}`, siteId);
+  }, [appId, siteId]);
+
+  useEffect(() => {
+    saveViewState(`agg.channels.mode.${appId}`, mode);
+  }, [appId, mode]);
+
   useEffect(() => {
     if (!site) return;
     if (!canRank && mode === 'rank') setMode('recommend');
     if (!canCategory && mode === 'category') setMode('recommend');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteId]);
+  }, [siteId, canRank, canCategory]);
 
   useEffect(() => {
-    if (mode === 'category' && !categoryId && categories.length) {
-      setCategoryId(categories[0].id);
+    if (!site || mode !== 'category') return;
+    const saved = loadViewState(`agg.channels.category.${appId}.${site.id}`, '');
+    const next = categories.some((c) => c.id === saved) ? saved : (categories[0]?.id ?? '');
+    if (next && next !== categoryId) setCategoryId(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteId, mode]);
+
+  useEffect(() => {
+    if (site && categoryId) {
+      saveViewState(`agg.channels.category.${appId}.${site.id}`, categoryId);
     }
-  }, [mode, categoryId, categories]);
+  }, [appId, site, categoryId]);
+
+  // 从阅读页返回时恢复频道列表滚动位置
+  useEffect(() => {
+    const main = document.querySelector('.main');
+    if (!main) return;
+    const key = `agg.scroll.channels.${appId}`;
+    const saved = Number(loadViewState(key, 0)) || 0;
+    mainScrollRef.current = saved;
+    let userScrolled = false;
+    const mark = () => {
+      userScrolled = true;
+    };
+    const restore = () => {
+      if (saved > 0 && !userScrolled) main.scrollTop = saved;
+    };
+    const timers = [250, 900, 1800].map((ms) => setTimeout(restore, ms));
+    main.addEventListener('wheel', mark, { passive: true });
+    main.addEventListener('touchstart', mark, { passive: true });
+    main.addEventListener('pointerdown', mark);
+    const onScroll = () => {
+      mainScrollRef.current = main.scrollTop;
+      saveViewState(key, main.scrollTop);
+    };
+    main.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      timers.forEach(clearTimeout);
+      main.removeEventListener('wheel', mark);
+      main.removeEventListener('touchstart', mark);
+      main.removeEventListener('pointerdown', mark);
+      main.removeEventListener('scroll', onScroll);
+      saveViewState(key, mainScrollRef.current);
+    };
+  }, [appId]);
 
   useEffect(() => {
     if (isAnime || !site) return;

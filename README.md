@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.4.1-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.4.2-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.4.1-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.4.2-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -108,6 +108,8 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
   起点、ttks 支持分类，频道内可直接打开书籍/条目。
 - **CloudWN 频道**：不再只复用首页“最新/全部”，频道页新增收藏排行和真实分类
   （同人志、单行本、杂志短篇、CG画集、AI图集、3D漫画、Cosplay）。
+- **频道状态记忆**：从频道页进入书籍/阅读再返回，会恢复所选源、推荐/排行/分类、分类 chip
+  和频道列表滚动位置；发现页滚动位置同样恢复。
 - **小说阅读**：不做全屏；阅读器顶栏提供换源、刷新图标，另保留字号/主题设置。
 - **ttks.tw 广告清洗**：过滤约 60 章后拼在正文末尾的“看书认准/天天看小说伴你读”等宣传语、
   数学字母域名和站点水印；正文缓存升级避免旧广告缓存命中。

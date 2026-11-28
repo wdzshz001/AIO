@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AppDef, Site, SiteCtx } from '@agg/core';
 import {
   DEFAULT_CHANNEL_TARGETS,
@@ -14,6 +14,7 @@ import {
 import Cover from '../components/Cover';
 import { displayText } from '../chinese';
 import { bridge } from '../bridge';
+import { loadViewState, saveViewState } from '../viewState';
 
 interface Props {
   sites: Site[];
@@ -62,6 +63,40 @@ export default function DiscoverPage({
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
   const [reload, setReload] = useState(0);
+  const mainScrollRef = useRef(0);
+
+  // 从书籍/阅读页返回时恢复发现页滚动位置
+  useEffect(() => {
+    const main = document.querySelector('.main');
+    if (!main) return;
+    const key = 'agg.scroll.discover';
+    const saved = Number(loadViewState(key, 0)) || 0;
+    mainScrollRef.current = saved;
+    let userScrolled = false;
+    const mark = () => {
+      userScrolled = true;
+    };
+    const restore = () => {
+      if (saved > 0 && !userScrolled) main.scrollTop = saved;
+    };
+    const timers = [250, 900, 1800].map((ms) => setTimeout(restore, ms));
+    main.addEventListener('wheel', mark, { passive: true });
+    main.addEventListener('touchstart', mark, { passive: true });
+    main.addEventListener('pointerdown', mark);
+    const onScroll = () => {
+      mainScrollRef.current = main.scrollTop;
+      saveViewState(key, main.scrollTop);
+    };
+    main.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      timers.forEach(clearTimeout);
+      main.removeEventListener('wheel', mark);
+      main.removeEventListener('touchstart', mark);
+      main.removeEventListener('pointerdown', mark);
+      main.removeEventListener('scroll', onScroll);
+      saveViewState(key, mainScrollRef.current);
+    };
+  }, []);
 
   const targets = useMemo(() => {
     const list = [...DEFAULT_CHANNEL_TARGETS];
