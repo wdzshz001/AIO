@@ -162,6 +162,32 @@ const homeCache = new Map<string, { at: number; sections: BookSection[] }>();
 const chapterCache = new Map<string, { at: number; content: ChapterContent }>();
 const TTL = 30 * 60_000;
 
+export const CLOUDWN_CATEGORIES = [
+  { id: '5', name: '同人志' },
+  { id: '6', name: '单行本' },
+  { id: '7', name: '杂志&短篇' },
+  { id: '2', name: 'CG画集' },
+  { id: '37', name: 'AI图集' },
+  { id: '22', name: '3D漫画' },
+  { id: '3', name: 'Cosplay' },
+];
+
+export async function loadCloudwnRank(ctx: SiteCtx): Promise<BookSection[]> {
+  const url = `${BASE}/albums-favorite_ranking.html`;
+  const books = parseAlbums(await ctx.doc(url));
+  return books.length ? [{ title: '收藏排行', books, moreUrl: url }] : [];
+}
+
+export async function loadCloudwnCategory(
+  ctx: SiteCtx,
+  id: string,
+  name: string,
+): Promise<BookSection[]> {
+  const url = `${BASE}/albums-index-cate-${id}.html`;
+  const books = parseAlbums(await ctx.doc(url));
+  return books.length ? [{ title: `${name} · 分类`, books, moreUrl: url }] : [];
+}
+
 async function homeCloudwn(ctx: SiteCtx): Promise<BookSection[]> {
   const hit = homeCache.get('home');
   if (hit && Date.now() - hit.at < TTL) return hit.sections;

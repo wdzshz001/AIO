@@ -1,6 +1,11 @@
 import type { BookRef, BookSection, Site, SiteCtx, SiteKind } from '@agg/core';
 import { QIDIAN_CATEGORIES, loadQidianCategory, loadQidianRank } from './sites/qidian.ts';
 import {
+  CLOUDWN_CATEGORIES,
+  loadCloudwnCategory,
+  loadCloudwnRank,
+} from './sites/cloudwn.ts';
+import {
   TTKS_CATEGORIES,
   loadTtksCategory,
   loadTtksRank,
@@ -54,6 +59,7 @@ export async function loadRankChannels(site: Site, ctx: SiteCtx): Promise<SiteCh
   let sections: BookSection[] = [];
   if (site.id === 'qidian') sections = await loadQidianRank(ctx);
   else if (site.id === 'ttks') sections = await loadTtksRank(ctx);
+  else if (site.id === 'cloudwn') sections = await loadCloudwnRank(ctx);
   return sections.map((s, i) => channelOf(site, 'rank', s, i));
 }
 
@@ -61,11 +67,12 @@ export async function loadRankChannels(site: Site, ctx: SiteCtx): Promise<SiteCh
 export function channelCategories(site: Site): { id: string; name: string }[] {
   if (site.id === 'qidian') return QIDIAN_CATEGORIES;
   if (site.id === 'ttks') return TTKS_CATEGORIES;
+  if (site.id === 'cloudwn') return CLOUDWN_CATEGORIES;
   return [];
 }
 
 export function hasRankChannels(site: Site): boolean {
-  return site.id === 'qidian' || site.id === 'ttks';
+  return site.id === 'qidian' || site.id === 'ttks' || site.id === 'cloudwn';
 }
 
 export async function loadCategoryChannels(
@@ -79,6 +86,7 @@ export async function loadCategoryChannels(
   let sections: BookSection[] = [];
   if (site.id === 'qidian') sections = await loadQidianCategory(ctx, cat.id, cat.name);
   else if (site.id === 'ttks') sections = await loadTtksCategory(ctx, cat.id, cat.name);
+  else if (site.id === 'cloudwn') sections = await loadCloudwnCategory(ctx, cat.id, cat.name);
   return sections.map((s, i) => channelOf(site, 'category', s, i));
 }
 
@@ -89,6 +97,7 @@ export const DEFAULT_CHANNEL_TARGETS: { siteId: string; mode: ChannelMode; limit
   { siteId: 'ttks', mode: 'recommend', limit: 2 },
   { siteId: 'ttks', mode: 'rank', limit: 1 },
   { siteId: 'cloudwn', mode: 'recommend', limit: 1 },
+  { siteId: 'cloudwn', mode: 'rank', limit: 1 },
   { siteId: 'mycomic', mode: 'recommend', limit: 1 },
   { siteId: 'mangacopy', mode: 'recommend', limit: 1 },
 ];
