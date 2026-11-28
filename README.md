@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.3.2-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.3.3-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.3.2-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.3.3-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -44,7 +44,7 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 
 | 应用 | 聚合的站点 | 能力 |
 |---|---|---|
-| 小说 | 起点（默认书源）、得奇小说网、69书吧、同人小说网 | 起点推荐/分类/排行首页、详情、目录、阅读、书架直达进度、跨站换源 |
+| 小说 | 起点（默认书源）、天天看小说、69书吧、同人小说网 | 起点推荐/分类/排行首页、详情、目录、阅读、书架直达进度、跨站换源 |
 | 动画 | 21 个 animeko 在线源（含 1 个 json-api） | Bangumi 热度/本季推荐/新番时间表、条目搜索、剧集表、按集自动选源、默认优先源、换源、续播、连播 |
 | 漫画 | CloudWN 漫画、MYCOMIC、拷贝漫画 | 最新/排行首页、搜索、详情、全部图片竖排阅读、图片代理 |
 
@@ -72,7 +72,7 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **排行**：月票榜、畅销榜、阅读榜、书友榜、推荐榜、更新榜、签约榜、新书榜、新人榜（各 20 本）
 
 每个栏目右上角都有「更多」：打开该栏的完整列表页（榜单 20 本，免费/新书/畅销列表约 20–22 本）。
-点开书籍后**默认书源为起点**；详情页右上角「换源」会按书名在得奇小说网 / 69书吧 / 同人小说网里找同名作品，
+点开书籍后**默认书源为起点**；详情页右上角「换源」会按书名在天天看小说 / 69书吧 / 同人小说网里找同名作品，
 一键切换。起点免费章节可以直接读；付费章节匿名只能看到预览，阅读器会提示回详情页换源。
 
 ### 漫画应用：CloudWN / MYCOMIC / 拷贝漫画
@@ -86,7 +86,7 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
   必须带 `Version: 2025.11.21`、`Region: 0`、`platform: 1` 请求头；章节图在
   `/api/v3/comic/{path}/chapter/{uuid}` 的 `results.chapter.contents`。
 - MYCOMIC 在部分网络会被 Cloudflare 拦截；漫画首页会给出「验证 / 重试」入口。
-- 阅读器新增竖排长图模式；图片懒加载，工具栏只保留返回/换源等必要项。
+- 阅读器新增竖排长图模式；图片懒加载，工具栏保留返回/换源/刷新等图标。
 - **继续阅读**：动画记录播放秒数，小说记录滚动比例，漫画记录当前页/总页数；书架和最近记录会显示进度。
 
 ### 设置
@@ -102,7 +102,8 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
   动画预取下一集页面。设置 → 存储与隐私 可查看/清理内容缓存。
 - **繁简转换**：设置 → 阅读与播放可开关「繁体转简体」，默认开启；使用 opencc-js，
   覆盖小说正文、章节名、书籍标题、漫画/动画卡片和最近阅读。
-- **得奇小说网**：正文按滚动分块加载，自动逐屏滚动等待每个区块，过滤“当前章节内容不完整”等反爬提示。
+- **小说阅读**：不做全屏；阅读器顶栏提供换源、刷新图标，另保留字号/主题设置。
+- **类似滚动加载正文的书源不再收录**：得奇小说网已移除。
 - **换源匹配**：换源时标题会先统一做繁→简归一化，再计算同名匹配；
   ttks.tw 等繁体站的书名不会再因为繁体字被判定为“没有同名作品”。
 - **最近阅读**：动画条目直接按上次集号自动选源播放，不再只打开选源面板；
@@ -119,7 +120,7 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **首页状态记忆**：漫画源 tab、小说推荐/分类/排行、动画放送表星期、
   应用首页滚动位置都会在返回或重启后恢复。
 - **分批加载**：动画源每批最多 6 个，漫画当前页附近分批加载，不再一次拉取全部。
-- **阅读与播放**：小说字号/行距/段距/正文宽度/主题；漫画默认全屏阅读（隐藏顶部标题）；
+- **阅读与播放**：小说字号/行距/段距/正文宽度/主题，小说不再提供全屏；阅读器顶栏有换源/刷新图标；漫画默认全屏阅读；
   动画自动连播、默认优先源（默认樱花动漫）、倍速、静音、默认清晰度；
   漫画默认优先源为拷贝漫画。
 - **外观**：深色 / 浅色 / 跟随系统、强调色、紧凑/舒适、减少动画。
@@ -187,7 +188,6 @@ AGG_SMOKE_SETTINGS_ONLY=1 npm run smoke  # 只跑设置的七个页面
 AGG_SMOKE_MANGA=1 npm run smoke          # 拷贝漫画源专项
 AGG_SMOKE_CLOUDWN=1 npm run smoke        # CloudWN 原图专项
 AGG_SMOKE_NOVEL_PROGRESS=1 npm run smoke # 小说滚动进度
-AGG_SMOKE_DEQIXSS=1 npm run smoke        # 得奇小说网专项
 npm run check        # 类型检查
 npm test             # core 集号/匹配 + 设置过滤 + 订阅 21 源构建测试
 launch.cmd           # 等价于双击快捷方式
@@ -198,7 +198,7 @@ launch.cmd           # 等价于双击快捷方式
 ```
 packages/
   core/       纯逻辑：类型、DOM、集号/标题匹配、抓取上下文（fetch → render 自动降级）
-  adapters/   Bangumi 客户端、订阅引擎、起点/得奇/小说站、CloudWN/MYCOMIC/拷贝漫画源、图片代理
+  adapters/   Bangumi 客户端、订阅引擎、起点/天天看小说/小说站、CloudWN/MYCOMIC/拷贝漫画源、图片代理
   ui/         React 界面：宫格 / 搜索 / 动画首页 / 起点找书 / 漫画首页 / 设置子页 / 条目 / 选源 / 详情 / 阅读器
 apps/
   desktop/    Electron 主进程（会话、渲染、采集、HTTP、媒体/图片代理）+ preload
@@ -267,7 +267,6 @@ interface Site {
 ### 现成样本
 
 - [qidian.ts](packages/adapters/src/sites/qidian.ts)：移动端静态页；首页/分类/排行/详情/目录/正文，付费章节检测
-- [deqixss.ts](packages/adapters/src/sites/deqixss.ts)：POST 搜索 + 目录；首屏先返回，剩余分页后台合并
 - [cloudwn.ts](packages/adapters/src/sites/cloudwn.ts)：图集分页抓取 + 图片代理（多页图集）
 - [mycomic.ts](packages/adapters/src/sites/mycomic.ts)：JSON-LD 详情 + x-data 章节 + 章节图片
 - [mangacopy.ts](packages/adapters/src/sites/mangacopy.ts)：独立 API 域 + 加密响应 + 章节 contents

@@ -197,3 +197,17 @@ export async function clearContentCache(): Promise<number> {
     return 0;
   }
 }
+
+/** 刷新单章时只移除这一章的正文缓存 */
+export function removeContentCache(key: string): void {
+  memory.delete(key);
+  mediaMemory.delete(key);
+  void openDb().then((db) => {
+    if (!db) return;
+    try {
+      db.transaction(STORE, 'readwrite').objectStore(STORE).delete(key);
+    } catch {
+      /* ignore */
+    }
+  });
+}

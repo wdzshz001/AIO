@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BookDetail, Chapter, Site, SiteCtx } from '@agg/core';
 import { findSourcesByTitle } from '@agg/adapters';
 import Cover from '../components/Cover';
@@ -14,6 +14,8 @@ interface Props {
   onBack: () => void;
   onSwitchSource: (siteId: string, url: string) => void;
   onRead: (detail: BookDetail, chapters: Chapter[], index: number) => void;
+  /** 从阅读页点“换源”返回详情页时，自动打开换源面板 */
+  autoSwitch?: boolean;
 }
 
 const PAGE = 300;
@@ -27,6 +29,7 @@ export default function BookPage({
   onBack,
   onSwitchSource,
   onRead,
+  autoSwitch = false,
 }: Props) {
   const [detail, setDetail] = useState<BookDetail | null>(null);
   const [chapters, setChapters] = useState<Chapter[] | null>(null);
@@ -35,6 +38,7 @@ export default function BookPage({
   const [chaptersLoading, setChaptersLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [t2s] = useState(() => loadPrefs().t2s);
+  const autoSwitchOpened = useRef(false);
   const tr = (value: string | undefined | null) =>
     t2s ? toSimplified(value ?? '') : (value ?? '');
   const [filter, setFilter] = useState('');
@@ -167,6 +171,13 @@ export default function BookPage({
       setSwitchLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!autoSwitch || !detail || autoSwitchOpened.current) return;
+    autoSwitchOpened.current = true;
+    void openSwitch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSwitch, detail]);
 
   return (
     <div className="page">

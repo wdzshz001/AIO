@@ -214,6 +214,8 @@ export interface SiteCtx {
   verify(url: string): Promise<boolean>;
   /** 相对地址转绝对地址（基于站点 baseUrl） */
   abs(href: string | null | undefined): string | undefined;
+  /** 清空该站点的 HTML 页面缓存（阅读页刷新用） */
+  clearCache?(): void;
 }
 
 export interface DocOpts {

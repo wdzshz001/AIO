@@ -15,7 +15,7 @@
 
 **三个应用：**
 
-- **小说**：起点（默认书源）+ 得奇小说网 + 69书吧 + 同人小说网。首页是起点的推荐/分类/排行；
+- **小说**：起点（默认书源）+ 天天看小说 + 69书吧 + 同人小说网。首页是起点的推荐/分类/排行；
   打开书籍默认书源为起点，详情页可换源到另外三个站。
   阅读起点 VIP/APP 章节时自动搜索同名免费书源，跳到同章节并在顶部浮层提示；
   起点有免费章时仍按原书源阅读。
@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.3.2-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.3.3-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -58,13 +58,14 @@
 - **本地缓存/预加载**：`packages/ui/src/contentCache.ts` 用 IndexedDB 持久化
   小说正文/漫画章节（12h、最多 80 条、可清理）；`preload.ts` 预取漫画附近页；
   Reader 预取下一章/下一集页面。图片/HLS 分片由代理层加 Cache-Control。
-- **阅读全屏**：小说/漫画点击阅读器中心切换工具栏；漫画默认全屏。
+- **阅读全屏**：小说不做全屏，点击正文不隐藏工具栏；漫画默认全屏，点中心切换工具栏；阅读器顶栏有换源/刷新图标。
 - **Android 动画全屏**：默认不横屏；点全屏图标后调用原生 `setVideoFullscreen(true)`
   横屏，退出恢复。全屏控制层默认隐藏，点击视频/空白唤出上一集、下一集、退出按钮 3 秒。
 - **繁简转换**：`packages/ui/src/chinese.ts` 使用 opencc-js（t→cn），默认开启；
   ReaderPrefs `t2s` 可关；正文/章节/书籍/卡片/最近阅读统一 `displayText()`。
-- **得奇小说网**：渲染滚动改为逐屏触发区块加载，`stripDeqixssNoise` 清理
   “当前章节内容不完整”/“加载中”等占位符；正文缓存 key 升 v2。
+- **小说阅读**：不做全屏；Reader 顶栏有换源/刷新图标；换源会回详情页并自动打开换源面板。
+- **已移除得奇小说网**：正文需要滚动到区块才由 JS 加载的书源不再收录。
 - **换源匹配**：`findSourcesByTitle` 先把候选书名和查询都过 `toSimplified()`，
   再做 pickBestTitle；解决简体查询命中繁体站（ttks.tw）时相似度低于 80 的问题。
 - **ttks.tw 搜索**：站内精确命中会 302 到详情页；`searchTtks` 检测 `.novel_info` 并用
@@ -100,13 +101,13 @@
 - **Android 更新**：设置 → 关于 → 检查更新。静态 `android-latest.json` 加时间戳
   绕缓存，失败用 GitHub Releases API 兜底；下载用唯一 APK 文件名，完成后自动打开安装器。
   0.2.1 起修复了旧版本检测/下载的兼容问题。
-- **Android 视频/漫画**：动画视频自动横屏全屏；漫画默认全屏阅读（隐藏顶部标题/底部导航）。
+- **Android 视频/漫画**：动画视频点全屏才横屏；漫画默认全屏阅读。
 - **GitHub Actions**：`.github/workflows/build.yml`，push main 构建双端 artifact；
   `v*` tag 发布安装包 + `hot-win` 热更新资产。
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.3.2-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.3.3-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。
@@ -132,7 +133,6 @@ packages/
     src/subscription/jsonapi.ts json-api 工厂（稀饭 Next）
     src/subscription/loader.ts  订阅加载
     src/sites/qidian.ts   起点（移动端静态页：首页/分类/排行/详情/目录/正文）
-    src/sites/deqixss.ts  得奇小说网（POST 搜索 + 渲染分块正文）
     src/sites/shuba69.ts  69书吧（ALTCHA + JS 链接 + 正文需渲染）
     src/sites/trxs.ts     同人小说网（纯静态 GBK）
     src/sites/cloudwn.ts  CloudWN 漫画（图集分页 + 图片代理）
@@ -199,7 +199,6 @@ mp4 直接返回上游 Response；m3u8 改写分片地址；分片补 CORS 后�
   - 详情/目录/正文：`/book/{id}/`、`/book/{id}/catalog/`、`/chapter/{bookId}/{chapterId}/`
   - 目录按「第一章」定位完整列表（首条是最新章），标题去掉「免费/VIP」后缀；
     付费章节标记 `Chapter.locked`，正文检测到「登录订阅本章」时提示换源
-- **得奇小说网**：首页 `.item` 卡片；搜索是 POST `/modules/article/search.php`；
   详情 `#list-chapterAll dd a`；正文静态为空，`#chapter-content` 由 chapter.js 分块渲染。
   章节标题带 `(第N/M页)`；第 1 页先回调给阅读器，剩余页后台 3 并发抓取并按页序合并，
   阅读器正文尾部显示「正在加载后续内容…」，完成后 `streaming=false`。
@@ -207,7 +206,6 @@ mp4 直接返回上游 Response；m3u8 改写分片地址；分片补 CORS 后�
 - 同人小说网：纯静态 GBK，目录一次拿全
 - 阅读器：字号/主题（纸质·护眼·夜间）、进度持久化、相邻章预取、目录边采边显示
 - 书架点击可直接回到上次章节（有章节缓存时），否则回详情
-- 详情页「换源」：按标题并发搜索其他小说站，选同名作品切换（起点书默认走这里换到得奇/69/trxs）
 
 ### 4. 动画应用（重写）
 
@@ -388,7 +386,6 @@ AGG_SMOKE_INDEX=2 AGG_SMOKE_QUERY=同人 npm run smoke        # 漫画首页（C
 AGG_SMOKE_MANGA=1 npm run smoke                 # 拷贝漫画源专项（首页 → 详情 → 51 章 → 20 图）
 AGG_SMOKE_CLOUDWN=1 npm run smoke               # CloudWN 原图专项（图集 → view 页 → 1359×1920）
 AGG_SMOKE_NOVEL_PROGRESS=1 npm run smoke        # 小说滚动进度保存/续读
-AGG_SMOKE_DEQIXSS=1 npm run smoke               # 得奇小说网：详情 300 章 → 正文渲染 → 第二章
 AGG_SMOKE_SETTINGS_ONLY=1 AGG_SMOKE_OUT=_probe/settings-only npm run smoke  # 只跑设置七个页面
 node scripts/check-sources.mjs                  # 查看订阅源当前域名
 ```
@@ -406,7 +403,6 @@ node scripts/check-sources.mjs                  # 查看订阅源当前域名
   拷贝漫画：首页 2 栏、详情 51 章、首章 20 图（首图代理加载成功）、下一章「第02話」；
 - 漫画续读：滚到第 4 页后保存 `page=4/pageCount=21`，返回详情点「继续阅读」恢复到 `P4/21`；
 - 小说续读：滚到 50% 后保存 `scroll=0.500`，返回详情点「继续阅读」恢复滚动比例 `0.500`；
-- 得奇小说网：详情 300 章（首屏目录上限），首章首屏 25 段约 3.1 秒先显示，
   后台 3 并发加载剩余页，最终 224 段（约 14.4 秒，`streaming=false`），阅读器不再出现站点分页；
 - 动画仍用原有 `position/duration`（秒）记录，Reader 新增的滚动/页码逻辑对视频内容不生效；
 - 设置：根页 + 内容源/阅读与播放/外观/启动与搜索/存储与隐私/网络与缓存/关于

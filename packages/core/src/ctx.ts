@@ -134,5 +134,6 @@ export function createCtx(bridge: HostBridge, site: Site): SiteCtx {
     capture,
     verify,
     abs: (href) => absUrl(href, site.baseUrl),
+    clearCache: () => cache.clear(),
   };
 }

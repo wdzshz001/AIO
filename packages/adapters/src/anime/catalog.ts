@@ -371,7 +371,7 @@ export async function findSourcesByTitle(
         continue;
       }
       try {
-        const refs = await withTimeout(site.search(ctx, title), 25_000, '搜索超时');
+        const refs = await withTimeout(site.search(ctx, title), 45_000, '搜索超时');
         // 传统书源返回繁体书名时，和简体查询直接算编辑距离会被判成不同作品
         const queryNames = [title, toSimplified(title)];
         const comparable = refs.map((ref) => ({ ...ref, title: toSimplified(ref.title) }));

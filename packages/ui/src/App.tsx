@@ -38,7 +38,7 @@ export type Route =
   | { name: 'settings' }
   | { name: 'settings-nsfw' }
   | { name: 'settings-section'; section: SettingsSection }
-  | { name: 'book'; siteId: string; url: string }
+  | { name: 'book'; siteId: string; url: string; autoSwitch?: boolean }
   | { name: 'subject'; subjectId: number; autoEpisodeSort?: string; autoPlay?: boolean }
   | {
       name: 'read';
@@ -256,7 +256,13 @@ export default function App() {
       localStorage.setItem('agg.lastRoute.v1', JSON.stringify(route));
     }
     // 保存整条返回栈；阅读器路由不落盘（内容/章节表太大，进度由书架负责）
-    const persistable = stack.filter(isRestorableRoute);
+    const persistable = stack
+      .filter(isRestorableRoute)
+      .map((r) =>
+        r.name === 'book'
+          ? { name: 'book' as const, siteId: r.siteId, url: r.url }
+          : r,
+      );
     if (persistable.length) {
       localStorage.setItem('agg.routeStack.v1', JSON.stringify(persistable));
     }
@@ -530,7 +536,13 @@ export default function App() {
                   subjectId: route.subjectId!,
                   autoEpisodeSort: route.subjectEpisodeSort,
                 })
-            : undefined
+            : () =>
+                replace({
+                  name: 'book',
+                  siteId: route.siteId,
+                  url: route.bookUrl,
+                  autoSwitch: true,
+                })
         }
         />
       </>
@@ -695,6 +707,7 @@ export default function App() {
                 ctxFor={ctxFor}
                 onBack={back}
                 onSwitchSource={(siteId, url) => replace({ name: 'book', siteId, url })}
+                autoSwitch={pageRoute.autoSwitch}
                 onRead={(detail, chapters, index) =>
                   push({
                     name: 'read',

@@ -9,6 +9,7 @@ import {
   putMediaCache,
   readContentCache,
   readMediaCache,
+  removeContentCache,
 } from '../contentCache';
 import { preloadImageWindow } from '../preload';
 import { useSites } from '../sites';
@@ -62,6 +63,22 @@ function ExpandIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" />
+    </svg>
+  );
+}
+
+function SwitchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h13M14 4l3 3-3 3M20 17H7M10 14l-3 3 3 3" />
+    </svg>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
     </svg>
   );
 }
@@ -141,6 +158,7 @@ export default function Reader({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [playError, setPlayError] = useState('');
+  const [reloadNonce, setReloadNonce] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const firstIndexRef = useRef(index);
   const lastSavedRef = useRef(0);
@@ -302,7 +320,7 @@ export default function Reader({
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, chapter?.url, index]);
+  }, [ctx, chapter?.url, index, reloadNonce]);
 
   // 漫画滚动到新页时，继续向前预取几页
   useEffect(() => {
@@ -490,7 +508,17 @@ export default function Reader({
       enterVideoFullscreen();
       return;
     }
+    // 小说不做全屏阅读
+    if (site.kind === 'novel') return;
     setFullscreen((v) => !v);
+  };
+
+  const refreshChapter = () => {
+    if (!chapter) return;
+    removeContentCache(contentCacheKey(site.id, chapter.url));
+    ctx.clearCache?.();
+    setError('');
+    setReloadNonce((n) => n + 1);
   };
 
   return (
@@ -524,11 +552,20 @@ export default function Reader({
               <ExpandIcon />
             </button>
           )}
-          {onSwitchSource && content?.video && (
-            <button className="icon-btn switch-btn" onClick={onSwitchSource} title="换源">
-              换源
+          {onSwitchSource && (
+            <button className="icon-btn switch-btn" onClick={onSwitchSource} title="换源" aria-label="换源">
+              <SwitchIcon />
             </button>
           )}
+          <button
+            className="icon-btn"
+            onClick={refreshChapter}
+            title="刷新当前章节"
+            aria-label="刷新当前章节"
+            disabled={loading}
+          >
+            <RefreshIcon />
+          </button>
           <button
             className={'icon-btn' + (settingsOpen ? ' active' : '')}
             onClick={() => setSettingsOpen((v) => !v)}

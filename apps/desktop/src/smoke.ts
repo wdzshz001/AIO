@@ -273,38 +273,6 @@ export async function runSmoke(win: BrowserWindow): Promise<void> {
     await wait(1200);
     await shot('01-home');
 
-    if (process.env.AGG_SMOKE_DEQIXSS === '1') {
-      await js(`(() => {
-        const s = JSON.parse(localStorage.getItem('agg.settings.v1') || '{}');
-        s.settingsVersion = 2;
-        s.startup = { ...(s.startup || {}), page: 'last' };
-        localStorage.setItem('agg.settings.v1', JSON.stringify(s));
-        localStorage.setItem('agg.lastRoute.v1', JSON.stringify({
-          name: 'book',
-          siteId: 'deqixss',
-          url: 'https://www.deqixss.com/books/126/'
-        }));
-        location.reload();
-      })()`);
-      await wait(2000);
-      await until(`!!document.querySelector('.chapter-item')`, 30_000, 'deqixss-book');
-      await shot('deqixss-book');
-      if (process.env.AGG_SMOKE_STREAM_WAIT === '1') {
-        await clickFirst('.chapter-item');
-        await until(`document.querySelectorAll('.reader-body p').length > 3`, 20_000, 'deqixss-first');
-        const first = await js(`document.querySelectorAll('.reader-body p').length`);
-        await until(`document.querySelectorAll('.reader-body p').length > 200`, 45_000, 'deqixss-full');
-        const final = await js(`({ count: document.querySelectorAll('.reader-body p').length, streaming: !!document.querySelector('.reader-streaming') })`);
-        note(`deqixss stream: first=${first} final=${JSON.stringify(final)}`);
-        await shot('deqixss-stream');
-        note('DEQIXSS STREAM OK');
-        return;
-      }
-      await readBook('deqixss');
-      note('DEQIXSS OK');
-      return;
-    }
-
     if (process.env.AGG_SMOKE_HOT === '1') {
       const check = await js(`(async () => {
         try { return await window.agg.hotCheck(); } catch (e) { return { error: String(e) }; }
