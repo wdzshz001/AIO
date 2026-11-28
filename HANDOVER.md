@@ -44,7 +44,7 @@
 
 ### Windows 免安装包
 
-- `npm run dist:win` → `release/聚合阅读-0.3.3-portable.exe`
+- `npm run dist:win` → `release/聚合阅读-0.3.4-portable.exe`
 - `apps/desktop/package.json` 内置 electron-builder `portable` 配置；本机无 GitHub Electron 下载网络，
   用 `electronDist: ../../node_modules/electron/dist` 走本地 Electron。
 - `winCodeSign` 在本机因无符号链接权限解压失败，暂时 `signAndEditExecutable: false`；
@@ -65,6 +65,8 @@
   ReaderPrefs `t2s` 可关；正文/章节/书籍/卡片/最近阅读统一 `displayText()`。
   “当前章节内容不完整”/“加载中”等占位符；正文缓存 key 升 v2。
 - **小说阅读**：不做全屏；Reader 顶栏有换源/刷新图标；换源会回详情页并自动打开换源面板。
+- **ttks.tw 广告清洗**：60 章后广告可能拼在正文段尾（看书认准/天天看小说伴你读/ⓣⓣⓚ.ⓣⓦ 等），
+  在 `cleanText` 中从广告起始词组截断；`contentCacheKey` 升 v3 清旧正文缓存。
 - **已移除得奇小说网**：正文需要滚动到区块才由 JS 加载的书源不再收录。
 - **换源匹配**：`findSourcesByTitle` 先把候选书名和查询都过 `toSimplified()`，
   再做 pickBestTitle；解决简体查询命中繁体站（ttks.tw）时相似度低于 80 的问题。
@@ -107,7 +109,7 @@
 - **Android**：已实现原生 WebView 壳（`apps/android`，Java，不需要 Capacitor）：
   `MainActivity` + `NativeAgg`（OkHttp/Cookie、隐藏 WebView、表单、媒体嗅探）
   + `MediaProxy`（127.0.0.1 图片/MP4 Range/m3u8 重写）。
-  APK：`release/agg-reader-0.3.3-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
+  APK：`release/agg-reader-0.3.4-android.apk`；构建工具 JDK21/SDK35/Gradle 8.10 已装在
   `C:\za\android-tools`。已在 x86 模拟器验证：首页、小说首页/详情/免费章节、搜索结果、
   漫画首页/详情/24 张原图阅读（1080×1620）。动画 Bangumi 接口在当前模拟器网络超时，
   视频链路未在真机验证。

@@ -25,13 +25,13 @@ Windows：
 npm run dist:win
 ```
 
-产物在 `release/聚合阅读-0.3.3-portable.exe`。运行后会在 EXE 同级创建 `data/`，
+产物在 `release/聚合阅读-0.3.4-portable.exe`。运行后会在 EXE 同级创建 `data/`，
 设置、书架、缓存都放在里面，移动时 EXE + `data/` 一起复制即可。
 第一次运行可能被 SmartScreen 拦一下，点「更多信息 → 仍要运行」。
 
 Android：
 
-- 产物 `release/agg-reader-0.3.3-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
+- 产物 `release/agg-reader-0.3.4-android.apk`（minSdk 26，targetSdk 35，debug 签名，可侧载）
 - 源码与构建说明见 [apps/android/README.md](apps/android/README.md)
 - 当前已验证首页、小说/漫画、搜索、动画选源与播放（PC）；Android 动画链路仍需真机验证
 
@@ -103,6 +103,8 @@ GitHub Actions 自动构建：`.github/workflows/build.yml`。push main 只构�
 - **繁简转换**：设置 → 阅读与播放可开关「繁体转简体」，默认开启；使用 opencc-js，
   覆盖小说正文、章节名、书籍标题、漫画/动画卡片和最近阅读。
 - **小说阅读**：不做全屏；阅读器顶栏提供换源、刷新图标，另保留字号/主题设置。
+- **ttks.tw 广告清洗**：过滤约 60 章后拼在正文末尾的“看书认准/天天看小说伴你读”等宣传语、
+  数学字母域名和站点水印；正文缓存升级避免旧广告缓存命中。
 - **类似滚动加载正文的书源不再收录**：得奇小说网已移除。
 - **换源匹配**：换源时标题会先统一做繁→简归一化，再计算同名匹配；
   ttks.tw 等繁体站的书名不会再因为繁体字被判定为“没有同名作品”。

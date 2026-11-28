@@ -52,8 +52,8 @@ function requestDone<T>(req: IDBRequest<T>): Promise<T | null> {
 }
 
 export function contentCacheKey(siteId: string, url: string): string {
-  // v2：正文缓存升级（得奇历史坏正文/旧代理地址不再命中）
-  return `v2|${siteId}|${url}`;
+  // v3：ttks 正文广告清洗规则升级，旧缓存不再命中
+  return `v3|${siteId}|${url}`;
 }
 
 /**
