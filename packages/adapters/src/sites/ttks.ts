@@ -99,6 +99,16 @@ async function homeTtks(ctx: SiteCtx): Promise<BookSection[]> {
 async function searchTtks(ctx: SiteCtx, keyword: string): Promise<BookRef[]> {
   const query = new URLSearchParams({ searchkey: keyword, searchtype: 'all' });
   const doc = await ctx.doc(`${BASE}/novel/search?${query.toString()}`);
+
+  // 站内精确命中会直接 302 到详情页；此时不能只解析“搜索结果的卡片链接”
+  if (qs(doc, '.novel_info')) {
+    const canonical =
+      absolute(qs<HTMLLinkElement>(doc, 'link[rel="canonical"]')?.getAttribute('href')) ||
+      absolute(qs<HTMLMetaElement>(doc, 'meta[property="og:url"]')?.getAttribute('content'));
+    const title = cleanText(text(qs(doc, 'h1')));
+    if (canonical && title) return [{ url: canonical, title, cover: coverOf(doc) }];
+  }
+
   return parseLinks(doc);
 }
 
